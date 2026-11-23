@@ -2,6 +2,8 @@ name: Android
 
 on:
   push:
+    branches: ['**']
+    tags: ['v*']   # pushing a tag like v0.0.1 builds and publishes a GitHub release
     paths-ignore: ['docs/**', '**.md']
   pull_request:
   workflow_dispatch:
@@ -11,6 +13,8 @@ jobs:
     name: Build APK
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    permissions:
+      contents: write   # needed to publish releases
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +60,33 @@ jobs:
                    assets/licenses/gcem.txt assets/licenses/content-game-support.md; do
             grep -q " $f\$" apk-contents.txt || { echo "::error::missing $f in APK"; exit 1; }
           done
+
+      - name: Check tag matches versionName
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION=$(sed -n "s/^ *versionName '\(.*\)'/\1/p" android/app/build.gradle)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match versionName $VERSION in android/app/build.gradle"
+            exit 1
+          fi
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$GITHUB_REF_NAME"
+          OUT="UZDoomDroid-$TAG.apk"
+          cp "$(ls android/app/build/outputs/apk/release/*.apk | head -1)" "$OUT"
+          sha256sum "$OUT" > "$OUT.sha256"
+          NOTES="android/release-notes/$TAG.md"
+          [ -f "$NOTES" ] || NOTES=/dev/null
+          { cat "$NOTES"; printf '\n\n**SHA-256:** `%s`\n' "$(cut -d' ' -f1 "$OUT.sha256")"; } > notes.md
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$OUT" "$OUT.sha256" --clobber
+          else
+            gh release create "$TAG" "$OUT" "$OUT.sha256" --title "UZDoomDroid $TAG" --notes-file notes.md --verify-tag
+          fi
 
       - uses: actions/upload-artifact@v4
         with:

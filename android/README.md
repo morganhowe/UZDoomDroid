@@ -21,6 +21,16 @@ It runs on phones and tablets with a paired controller, Android TV / Google TV b
 
 ## Building
 
+### Releases
+
+Pushing a tag that matches `versionName` in `app/build.gradle` (for example `v0.0.1`) builds the APK and publishes
+a GitHub release with `UZDoomDroid-<tag>.apk`, a SHA-256 checksum, and the notes from `release-notes/<tag>.md`.
+To make a new release, bump `versionCode` and `versionName`, add a notes file, then:
+
+```sh
+git tag v0.0.2 && git push origin v0.0.2
+```
+
 ### On GitHub (easiest)
 
 Push this branch to your fork. The **Android** workflow (`.github/workflows/android.yml`) builds a

@@ -36,12 +36,15 @@ It runs on phones and tablets with a controller, Android TV / Google TV, and And
 
 ## Getting the app
 
-1. Open the [Android workflow runs](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml)
-   and click the newest run with a green check.
-2. Under **Artifacts**, download **uzdoomdroid-android** (you need to be signed in to GitHub). Unzip it to get the `.apk`.
-3. Copy the `.apk` to your device, open it, and allow installs from that app when Android asks.
+Download the latest `UZDoomDroid-v*.apk` from **[Releases](https://github.com/morganhowe/UZDoomDroid/releases)**.
+Copy it to your device, open it, and allow installs from that app when Android asks.
 
-The APK is signed with a debug key. It's fine for personal use, but not for redistribution.
+The APK is signed with a temporary build key. It's fine for personal use, but a later version may need you to uninstall
+the old one first.
+
+Test builds from every push are also available under
+[Actions → Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) → newest green run →
+**Artifacts** (sign-in required).
 
 ## Playing
 
