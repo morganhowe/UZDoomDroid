@@ -46,6 +46,15 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon --stacktrace assembleRelease
 
+      - name: Check APK contents
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          unzip -l "$APK" | grep -E 'lib/|assets/engine/[^/]*$' | tee apk-contents.txt
+          for f in lib/arm64-v8a/libmain.so lib/arm64-v8a/libSDL2.so lib/arm64-v8a/libopenal.so \
+                   lib/arm64-v8a/libc++_shared.so assets/engine/uzdoom.pk3; do
+            grep -q " $f\$" apk-contents.txt || { echo "::error::missing $f in APK"; exit 1; }
+          done
+
       - uses: actions/upload-artifact@v4
         with:
           name: uzdoom-android
