@@ -3,8 +3,10 @@ name: Android
 on:
   push:
     branches: ['**']
-    tags: ['v*']   # pushing a tag like v0.0.1 builds and publishes a GitHub release
     paths-ignore: ['docs/**', '**.md']
+  # Publishing a release (tag like v0.0.1) on GitHub builds the APK and attaches it.
+  release:
+    types: [published]
   pull_request:
   workflow_dispatch:
 
@@ -62,7 +64,7 @@ jobs:
           done
 
       - name: Check tag matches versionName
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'release'
         run: |
           VERSION=$(sed -n "s/^ *versionName '\(.*\)'/\1/p" android/app/build.gradle)
           if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
@@ -70,8 +72,8 @@ jobs:
             exit 1
           fi
 
-      - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Attach APK to the release
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -82,11 +84,8 @@ jobs:
           NOTES="android/release-notes/$TAG.md"
           [ -f "$NOTES" ] || NOTES=/dev/null
           { cat "$NOTES"; printf '\n\n**SHA-256:** `%s`\n' "$(cut -d' ' -f1 "$OUT.sha256")"; } > notes.md
-          if gh release view "$TAG" > /dev/null 2>&1; then
-            gh release upload "$TAG" "$OUT" "$OUT.sha256" --clobber
-          else
-            gh release create "$TAG" "$OUT" "$OUT.sha256" --title "UZDoomDroid $TAG" --notes-file notes.md --verify-tag
-          fi
+          gh release upload "$TAG" "$OUT" "$OUT.sha256" --clobber
+          gh release edit "$TAG" --title "UZDoomDroid $TAG" --notes-file notes.md
 
       - uses: actions/upload-artifact@v4
         with:
