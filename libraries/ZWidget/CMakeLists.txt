@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(zwidget)
 
-if (UNIX AND NOT APPLE)
+if (UNIX AND NOT APPLE AND NOT ANDROID)
 	include(FindPkgConfig)
 	pkg_check_modules(DBUS dbus-1)
 	if (!DBUS_FOUND)
@@ -11,7 +11,12 @@ endif()
 
 # SDL2 finding stuff
 # Optional on all platforms
-find_package(SDL2 QUIET)
+if(TARGET SDL2::SDL2)
+	# Provided by the parent project (e.g. the Android build)
+	set(SDL2_FOUND TRUE)
+else()
+	find_package(SDL2 QUIET)
+endif()
 if(NOT ${SDL2_FOUND})
 	include(FindPkgConfig)
 	pkg_search_module(SDL2 sdl2)
@@ -200,6 +205,11 @@ if(WIN32)
 		# Ignore warning about legacy CRT functions
 		#set(ZWIDGET_DEFINES ${ZWIDGET_DEFINES} -D_CRT_SECURE_NO_WARNINGS)
 	endif()
+elseif(ANDROID)
+	# Android: no X11/Wayland/DBus, only the SDL2 backend below.
+	set(ZWIDGET_LIBS ${CMAKE_DL_LIBS})
+	set(ZWIDGET_DEFINES -DUNIX -D_UNIX)
+	set(ZWIDGET_LINK_OPTIONS)
 elseif(APPLE)
 	set(ZWIDGET_SOURCES ${ZWIDGET_SOURCES} ${ZWIDGET_COCOA_SOURCES})
 	set(ZWIDGET_LIBS ${CMAKE_DL_LIBS} -ldl)

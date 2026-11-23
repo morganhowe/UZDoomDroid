@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingStart="48dp"
+    android:paddingEnd="48dp"
+    android:paddingTop="24dp"
+    android:paddingBottom="20dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_gamepad" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@color/text"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/folder_hint"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="24dp"
+            android:gravity="end"
+            android:textColor="@color/text_dim"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="16dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="16dp"
+            android:orientation="vertical">
+
+            <TextView style="@style/ListHeader" android:text="@string/games" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ListView
+                    android:id="@+id/iwad_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/list_bg"
+                    android:choiceMode="singleChoice"
+                    android:divider="@null"
+                    android:listSelector="@drawable/list_selector"
+                    android:drawSelectorOnTop="false"
+                    android:padding="6dp"
+                    android:nextFocusRight="@+id/mod_list"
+                    android:nextFocusDown="@+id/play_button" />
+
+                <TextView
+                    android:id="@+id/iwad_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/list_bg"
+                    android:gravity="center"
+                    android:padding="20dp"
+                    android:textColor="@color/text_dim"
+                    android:textSize="16sp" />
+            </FrameLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView style="@style/ListHeader" android:text="@string/mods" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ListView
+                    android:id="@+id/mod_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/list_bg"
+                    android:choiceMode="multipleChoice"
+                    android:divider="@null"
+                    android:listSelector="@drawable/list_selector"
+                    android:drawSelectorOnTop="false"
+                    android:padding="6dp"
+                    android:nextFocusLeft="@id/iwad_list"
+                    android:nextFocusDown="@+id/play_button" />
+
+                <TextView
+                    android:id="@+id/mod_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/list_bg"
+                    android:gravity="center"
+                    android:padding="20dp"
+                    android:text="@string/no_mods"
+                    android:textColor="@color/text_dim"
+                    android:textSize="16sp" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/play_button"
+            style="@style/LauncherButton"
+            android:nextFocusUp="@id/iwad_list"
+            android:text="@string/play" />
+
+        <Button
+            android:id="@+id/import_button"
+            style="@style/LauncherButton"
+            android:nextFocusUp="@id/iwad_list"
+            android:text="@string/import_files" />
+
+        <Button
+            android:id="@+id/refresh_button"
+            style="@style/LauncherButton"
+            android:nextFocusUp="@id/mod_list"
+            android:text="@string/refresh" />
+
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textColor="@color/text"
+            android:textSize="15sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="@string/controls_hint"
+        android:textColor="@color/text_dim"
+        android:textSize="14sp" />
+</LinearLayout>

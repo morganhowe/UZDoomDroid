@@ -200,7 +200,15 @@ namespace Priv
 		if (gl_debug)
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
+#ifdef __ANDROID__
+		// Android only has OpenGL ES; glver holds the ES version to try.
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glver[0]);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glver[1]);
+		if (false)
+#else
 		if (gl_es)
+#endif
 		{
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -415,12 +423,17 @@ DFrameBuffer *SDLVideo::CreateFrameBuffer ()
 
 	if (fb == nullptr)
 	{
+#if defined(__ANDROID__)
+		// Desktop OpenGL is not available on Android: always use the GLES renderer.
+		fb = new OpenGLESRenderer::OpenGLFrameBuffer(0, vid_fullscreen);
+#else
 #ifdef HAVE_GLES2
 		if (vid_preferbackend != BACKEND_OPENGL)
 			fb = new OpenGLESRenderer::OpenGLFrameBuffer(0, vid_fullscreen);
 		else
 #endif
 			fb = new OpenGLRenderer::OpenGLFrameBuffer(0, vid_fullscreen);
+#endif
 	}
 
 	return fb;
@@ -523,11 +536,19 @@ SystemGLFrameBuffer::SystemGLFrameBuffer(void *hMonitor, bool fullscreen)
 	// NOTE: Core profiles were added with GL 3.2, so there's no sense trying
 	// to set core 3.1 or 3.0. We could try a forward-compatible context
 	// instead, but that would be too restrictive (w.r.t. shaders).
+#ifdef __ANDROID__
+	// OpenGL ES versions: prefer 3.x (mapped buffers, sync objects), fall back to 2.0.
+	static const int glvers[][2] = {
+		{ 3, 2 }, { 3, 1 }, { 3, 0 }, { 2, 0 },
+		{ 0, 0 },
+	};
+#else
 	static const int glvers[][2] = {
 		{ 4, 6 }, { 4, 5 }, { 4, 4 }, { 4, 3 }, { 4, 2 }, { 4, 1 }, { 4, 0 },
 		{ 3, 3 }, { 3, 2 }, { 2, 0 },
 		{ 0, 0 },
 	};
+#endif
 	int glveridx = 0;
 	int i;
 

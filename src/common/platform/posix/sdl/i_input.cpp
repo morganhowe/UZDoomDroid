@@ -673,6 +673,15 @@ void I_GetEvent ()
 
 	while (SDL_PollEvent (&sev))
 	{
+#ifdef __ANDROID__
+		// The Android Back key (TV remotes, the system button on some pads)
+		// arrives as AC_BACK; treat it like Escape so it opens/closes menus.
+		if ((sev.type == SDL_KEYDOWN || sev.type == SDL_KEYUP) && sev.key.keysym.scancode == SDL_SCANCODE_AC_BACK)
+		{
+			sev.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
+			sev.key.keysym.sym = SDLK_ESCAPE;
+		}
+#endif
 		MessagePump (sev);
 	}
 	if (use_mouse)

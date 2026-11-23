@@ -1,0 +1,149 @@
+import com.android.build.api.variant.ApplicationVariant
+
+plugins {
+    id 'com.android.application'
+}
+
+// Layout:
+//   <repo>/CMakeLists.txt         the engine (built with the NDK)
+//   <repo>/android/deps           SDL2 + OpenAL Soft sources (fetch-deps.sh)
+//   <repo>/android/hosttools      lemon/re2c/zipdir, built for the build machine
+def repoRoot      = rootProject.file('..')
+def depsDir       = rootProject.file('deps')
+def hostToolsDir  = layout.buildDirectory.dir('hosttools').get().asFile
+def engineDataDir = layout.buildDirectory.dir('engine-data').get().asFile
+def abiList       = (project.findProperty('uzdoom.abis') ?: 'arm64-v8a').split(',').collect { it.trim() }
+
+android {
+    namespace 'org.zdoom.uzdoom'
+    compileSdk 35
+    ndkVersion '27.2.12479018'
+
+    defaultConfig {
+        applicationId 'org.zdoom.uzdoom'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0-android'
+
+        ndk {
+            abiFilters(*abiList)
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DUZDOOM_ANDROID_DEPS=${depsDir}",
+                          "-DIMPORT_EXECUTABLES=${hostToolsDir}/ImportExecutables.cmake",
+                          "-DUZDOOM_ENGINE_DATA_DIR=${engineDataDir}",
+                          '-DANDROID_STL=c++_shared',
+                          '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "${repoRoot}/CMakeLists.txt"
+            version '3.22.1'
+            buildStagingDirectory file('.cxx')
+        }
+    }
+
+    sourceSets {
+        main {
+            // SDL's Java glue must match the native SDL version, so use it straight from the SDL checkout.
+            java.srcDirs += "${depsDir}/SDL/android-project/app/src/main/java"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the debug key so CI artifacts install directly.
+            // Configure a real signing key before distributing.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    androidResources {
+        noCompress 'pk3', 'sf2', 'wopl', 'wopn'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Third-party sources
+// ---------------------------------------------------------------------------
+def fetchDeps = tasks.register('fetchDeps', Exec) {
+    description = 'Clones SDL2 and OpenAL Soft into android/deps'
+    commandLine 'sh', rootProject.file('fetch-deps.sh').absolutePath
+    onlyIf { !new File(depsDir, 'SDL/CMakeLists.txt').exists() || !new File(depsDir, 'openal-soft/CMakeLists.txt').exists() }
+}
+
+// ---------------------------------------------------------------------------
+// Code generators (lemon, re2c, zipdir) must run on the build machine.
+// ---------------------------------------------------------------------------
+def configureHostTools = tasks.register('configureHostTools', Exec) {
+    inputs.file rootProject.file('hosttools/CMakeLists.txt')
+    outputs.file new File(hostToolsDir, 'ImportExecutables.cmake')
+    commandLine 'cmake', '-S', rootProject.file('hosttools').absolutePath, '-B', hostToolsDir.absolutePath,
+                '-DCMAKE_BUILD_TYPE=Release'
+}
+def buildHostTools = tasks.register('buildHostTools', Exec) {
+    dependsOn configureHostTools
+    commandLine 'cmake', '--build', hostToolsDir.absolutePath, '--config', 'Release', '--parallel'
+}
+
+tasks.named('preBuild').configure { dependsOn fetchDeps, buildHostTools }
+tasks.configureEach { t ->
+    if (t.name.startsWith('configureCMake') || t.name.startsWith('buildCMake')) {
+        t.dependsOn fetchDeps, buildHostTools
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Engine data (pk3s, soundfonts, FM banks) produced by the native build is
+// shipped as APK assets under engine/ and extracted on first launch.
+// ---------------------------------------------------------------------------
+abstract class CollectEngineData extends DefaultTask {
+    @InputDirectory
+    abstract DirectoryProperty getSourceDir()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDir()
+
+    @TaskAction
+    void collect() {
+        def src = sourceDir.get().asFile
+        def dst = new File(outputDir.get().asFile, 'engine')
+        project.delete(dst)
+        project.copy {
+            from(src) {
+                include '*.pk3'
+                include 'soundfonts/**'
+                include 'fm_banks/**'
+                exclude '**/*.txt'
+            }
+            into dst
+        }
+        def pk3s = dst.listFiles()?.findAll { it.name.endsWith('.pk3') } ?: []
+        if (!pk3s.any { it.name == 'uzdoom.pk3' }) {
+            throw new GradleException("uzdoom.pk3 was not produced by the native build (looked in ${src})")
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { ApplicationVariant variant ->
+        def cap = variant.name.capitalize()
+        def collect = tasks.register("collectEngineData${cap}", CollectEngineData) {
+            dependsOn "externalNativeBuild${cap}"
+            sourceDir.set(new File(engineDataDir, abiList[0]))
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(collect, { it.outputDir })
+    }
+}

@@ -1,0 +1,122 @@
+# UZDoom for Android (controller only)
+
+An Android port of UZDoom built to be played entirely with a gamepad.
+No touch input is needed anywhere: not in the launcher, the game, menus, or error dialogs.
+It runs on phones and tablets with a paired controller, Android TV / Google TV boxes, and Android handhelds
+(Retroid, AYN Odin, Ayaneo, Logitech G Cloud, and similar).
+
+## What you need
+
+* Android 8.0 (API 26) or newer, 64-bit ARM (`arm64-v8a`). `x86_64` can be added for emulators and Chromebooks.
+* OpenGL ES 3.x (2.0 works with reduced features)
+* Any controller Android recognises: Xbox, PlayStation, Switch Pro, 8BitDo, the built-in controls on handhelds, etc.
+* A game IWAD: `doom.wad`, `doom2.wad`, `heretic.wad`, `hexen.wad`, `strife1.wad`, … or the free
+  [Freedoom](https://freedoom.github.io/) `freedoom1.wad` / `freedoom2.wad`. No game data is bundled.
+
+## Building
+
+### On GitHub (easiest)
+
+Push this branch to your fork. The **Android** workflow (`.github/workflows/android.yml`) builds a
+release APK and attaches it as the `uzdoom-android` artifact on the run.
+
+### Locally
+
+Requirements: JDK 17+, Android SDK with NDK **27.2.12479018** and CMake **3.22.1**
+(`sdkmanager "ndk;27.2.12479018" "cmake;3.22.1"`), plus a host C/C++ compiler, CMake and Python 3.
+
+```sh
+sh android/fetch-deps.sh          # SDL2 2.32.8, OpenAL Soft 1.24.3, GCEM  -> android/deps/
+cd android
+./gradlew assembleRelease         # -> app/build/outputs/apk/release/app-release.apk
+adb install -r app/build/outputs/apk/release/app-release.apk
+```
+
+To build more ABIs: `./gradlew assembleRelease -Puzdoom.abis=arm64-v8a,x86_64`.
+
+The release APK is signed with the debug key so it installs directly. Set up a real signing
+config in `app/build.gradle` before you distribute it.
+
+### How the build fits together
+
+1. `android/hosttools` builds `lemon`, `re2c` and `zipdir` for the build machine and writes
+   `ImportExecutables.cmake`. The cross build uses these to generate parsers and pack the pk3s.
+2. Gradle runs the top-level `CMakeLists.txt` with the NDK. With `ANDROID` set,
+   `cmake/Android.cmake` adds SDL2 and OpenAL Soft from `android/deps`, and the engine is built
+   as `libmain.so` (the library SDLActivity loads).
+3. The pk3s, soundfont and FM banks the build produces become APK assets. On first launch they
+   are extracted to the app's internal storage, which the engine uses as its program directory.
+
+## Installing games and mods
+
+The launcher shows a **Game** list (IWADs) and a **Mods** list. Add files either way:
+
+* **Import (Y button):** opens the Android file picker, which you can navigate with the D-pad.
+  Pick one or more files and they are copied in.
+* **USB:** connect to a PC and copy files into
+  `Android/data/org.zdoom.uzdoom/files/wads/`
+
+A `.wad` with an `IWAD` header (and `.ipk3` / `.iwad` files) appears under **Game**. Everything else
+(`.wad` PWADs, `.pk3`, `.pk7`, `.zip`, `.deh`, `.bex`) appears under **Mods**. Selected mods load in
+alphabetical order.
+
+Advanced: put extra command-line arguments in `Android/data/org.zdoom.uzdoom/files/args.txt`
+(for example `+map MAP01` or `-warp 1 1`). Lines starting with `#` are ignored.
+
+Saves, `uzdoom.ini`, and screenshots are kept in `Android/data/org.zdoom.uzdoom/files/`, so you can
+back them up over USB.
+
+## Controls
+
+**Launcher**
+
+| Button | Action |
+|---|---|
+| D-pad / left stick | Move |
+| A | Select game / toggle mod / press button |
+| B | Quit |
+| START | Play |
+| Y | Import files |
+| L1 / R1 | Jump to the Game / Mods list |
+
+**In game** (UZDoom's default gamepad bindings, all changeable in the controls menu)
+
+| Button | Action |
+|---|---|
+| Left stick | Move / strafe |
+| Right stick | Turn / look |
+| RT / LT | Fire / alt-fire |
+| A | Use / open |
+| B | Crouch |
+| X | Reload |
+| Y | Jump |
+| LB / RB | Previous / next weapon |
+| Right stick click | Zoom |
+| D-pad left / right / down | Inventory prev / next / use |
+| D-pad up | Weapon slot 1 |
+| BACK / SELECT | Automap |
+| Guide / Home button | Pause |
+| START | Main menu |
+| Android Back key (TV remote) | Escape (open / close menu) |
+
+On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B set or clear marks.
+
+Menus are navigated with the D-pad. Use A to confirm and B to go back. Naming a save shows
+UZDoom's on-screen character grid, so no keyboard is needed.
+Rumble works on controllers that support it. Strength, dead zones and sensitivity are in the
+controller options menu.
+
+## Platform notes and limitations
+
+* **Renderer:** OpenGL ES, using UZDoom's GLES backend, plus the software renderer. The Vulkan
+  backend is turned off for Android (`HAVE_VULKAN=OFF` in `cmake/Android.cmake`). You can try it
+  by enabling it, but it hasn't been tested on Android.
+* **Video cutscenes:** VP8/VP9 (`.ivf`) movies are disabled because libvpx isn't built for Android.
+  Other movie formats (ANM, MVE, Smacker) still play.
+* **Music and sound:** MIDI (FluidSynth, OPL, OPN, Timidity, WildMidi), tracker and
+  game-music-emu formats work. OGG/FLAC/MP3 *streams* need libsndfile and libmpg123,
+  which aren't built yet. Doom-format sounds and WAV are unaffected.
+* Each game session runs in its own process (`:game`). Quitting the game returns to the launcher.
+  Choosing "Restart" in the error dialog, or using the restart command, relaunches with the
+  same files.
+* Engine output goes to logcat under the `UZDoom` tag (`adb logcat -s UZDoom`).

@@ -96,7 +96,9 @@ else()
 
 	# Non-Windows version also needs SDL except native OS X backend
 	if( NOT APPLE OR NOT OSX_COCOA_BACKEND )
-		find_package( SDL2 CONFIG REQUIRED )
+		if( NOT TARGET SDL2::SDL2 ) # Android builds SDL2 from source (cmake/Android.cmake)
+			find_package( SDL2 CONFIG REQUIRED )
+		endif()
 		list( APPEND PROJECT_LIBRARIES SDL2::SDL2 )
 	endif()
 
@@ -338,6 +340,8 @@ if( VPX_FOUND )
 	add_definitions( "-DUSE_LIBVPX=1" )
 	include_directories( SYSTEM "${VPX_INCLUDE_DIR}" )
 	set( PROJECT_LIBRARIES ${PROJECT_LIBRARIES} ${VPX_LIBRARIES} )
+elseif( ANDROID )
+	message( STATUS "libvpx not found: VP8/VP9 movie playback disabled" )
 else()
 	message( SEND_ERROR "Could not find libvpx" )
 endif()
@@ -442,6 +446,12 @@ elseif( APPLE )
 
 	set_source_files_properties( posix/osx/zdoom.icns PROPERTIES MACOSX_PACKAGE_LOCATION Resources )
 	set_source_files_properties( common/platform/posix/osx/iwadpicker_cocoa.mm PROPERTIES COMPILE_FLAGS -fobjc-exceptions )
+elseif( ANDROID )
+	set( SYSTEM_SOURCES_DIR common/platform/posix common/platform/posix/sdl )
+	set( SYSTEM_SOURCES ${PLAT_POSIX_SOURCES} ${PLAT_SDL_SOURCES} ${PLAT_UNIX_SOURCES} )
+	# The crash catcher forks a debugger, which is meaningless inside an app sandbox.
+	list( REMOVE_ITEM SYSTEM_SOURCES common/platform/posix/sdl/crashcatcher.c )
+	set( OTHER_SYSTEM_SOURCES ${PLAT_WIN32_SOURCES} ${PLAT_OSX_SOURCES} ${PLAT_COCOA_SOURCES} common/platform/posix/sdl/crashcatcher.c )
 else()
 	option (SYSTEMINSTALL "Set global progdir based on CMake Install Dir" OFF)
 
@@ -1274,7 +1284,12 @@ set( GAME_SOURCES
 set( GAME_NONPCH_SOURCES ${GAME_SOURCES} )
 list( REMOVE_ITEM GAME_NONPCH_SOURCES ${PCH_SOURCES} )
 
-add_executable( zdoom MACOSX_BUNDLE ${GAME_SOURCES} )
+if( ANDROID )
+	# SDLActivity loads the engine as libmain.so and calls SDL_main().
+	add_library( zdoom SHARED ${GAME_SOURCES} )
+else()
+	add_executable( zdoom MACOSX_BUNDLE ${GAME_SOURCES} )
+endif()
 
 target_include_directories( zdoom PRIVATE ${CMAKE_BINARY_DIR} )
 
@@ -1392,7 +1407,14 @@ include_directories(
 )
 
 set_target_properties( zdoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ZDOOM_OUTPUT_DIR} )
-set_target_properties( zdoom PROPERTIES OUTPUT_NAME ${ZDOOM_EXE_NAME} )
+if( ANDROID )
+	set_target_properties( zdoom PROPERTIES OUTPUT_NAME main )
+	target_link_libraries( zdoom log android )
+	# libopenal.so is dlopen()ed, so nothing links it; build it anyway so it gets packaged.
+	add_dependencies( zdoom OpenAL )
+else()
+	set_target_properties( zdoom PROPERTIES OUTPUT_NAME ${ZDOOM_EXE_NAME} )
+endif()
 
 if(NOT MINGW AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	set_target_properties(zdoom PROPERTIES LINK_FLAGS "-z nostart-stop-gc")
@@ -1430,7 +1452,7 @@ if( MSVC )
 
 endif()
 
-if (WIN32)
+if (WIN32 OR ANDROID)
 	# nothing
 elseif (APPLE)
 	IF ("${INSTALL_RPATH}" STREQUAL "")

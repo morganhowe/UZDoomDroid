@@ -6,6 +6,10 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 project(UZDoom)
 
+if( ANDROID )
+	include( "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Android.cmake" )
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -236,7 +240,10 @@ endmacro()
 set( ZDOOM_OUTPUT_DIR ${CMAKE_BINARY_DIR} CACHE PATH "Directory where zdoom.pk3 and the executable will be created." )
 set( ZDOOM_EXE_NAME "uzdoom" CACHE FILEPATH "Name of the executable to create" )
 
-if(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+if(ANDROID)
+	# Engine data (pk3s, soundfonts) is collected by Gradle and shipped as APK assets.
+	set(ZDOOM_RESOURCE_DIR "${ZDOOM_OUTPUT_DIR}")
+elseif(DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 	set(ZDOOM_RESOURCE_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 elseif(WIN32)
 	set(ZDOOM_RESOURCE_DIR "${PROJECT_BINARY_DIR}/$<CONFIG>")
@@ -444,7 +451,7 @@ else()
 			# If we're compiling with a custom GCC on the Mac (which we know since g++-4.2 doesn't support C++11) statically link libgcc.
 			set( ALL_C_FLAGS "-static-libgcc" )
 		endif()
-	elseif( NOT MINGW AND NOT HAIKU AND NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "SunOS" )
+	elseif( NOT MINGW AND NOT HAIKU AND NOT ANDROID AND NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "SunOS" )
 		# Generic GCC/Clang requires position independent executable to be enabled explicitly
 		set( ALL_C_FLAGS "${ALL_C_FLAGS} -fPIE" )
 		set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pie" )

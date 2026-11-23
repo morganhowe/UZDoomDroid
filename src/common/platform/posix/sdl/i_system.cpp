@@ -55,6 +55,9 @@
 #include "vm.h"
 #include "widgets/errorwindow.h"
 #include "widgets/launcherwindow.h"
+#ifdef __ANDROID__
+#include "version.h"
+#endif
 
 #if defined(__APPLE__)
 int I_PickIWad_Cocoa (WadStuff *wads, int numwads, bool showwin, int defaultiwad);
@@ -124,7 +127,25 @@ void Unix_I_FatalError(const char* errortext)
 		for (const FString& line : g_AllPrintOutput)
 			alltext.append(line.GetChars(), line.Len());
 
+#ifdef __ANDROID__
+		// ZWidget windows need a mouse; use a native Android dialog instead,
+		// which can be navigated with a gamepad / D-pad.
+		Printf("%s\n", errortext);
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		const SDL_MessageBoxButtonData buttons[] = {
+			{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "Quit" },
+			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Restart" },
+		};
+		const SDL_MessageBoxData box = {
+			SDL_MESSAGEBOX_ERROR, nullptr, GAMENAME " error", errortext,
+			SDL_arraysize(buttons), buttons, nullptr
+		};
+		int pressed = 0;
+		if (SDL_ShowMessageBox(&box, &pressed) == 0)
+			g_QueueRestart = pressed == 1;
+#else
 		g_QueueRestart = ErrorWindow::ExecModal(errortext, alltext);
+#endif
 	}
 	else
 	{
@@ -336,6 +357,10 @@ bool HoldingQueryKey(const char* key)
 
 bool I_PickIWad (bool showwin, FStartupSelectionInfo& info)
 {
+#ifdef __ANDROID__
+	// The Android launcher activity already chose the IWAD (-iwad).
+	showwin = false;
+#endif
 	if (!showwin)
 	{
 		return true;

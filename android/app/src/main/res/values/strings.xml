@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UZDoom</string>
+    <string name="games">Game</string>
+    <string name="mods">Mods (optional)</string>
+    <string name="play">Play</string>
+    <string name="import_files">Import files</string>
+    <string name="refresh">Refresh</string>
+    <string name="controls_hint">Ⓐ select · Ⓑ quit · START play · Ⓨ import · L1 / R1 switch list</string>
+    <string name="wad_folder_hint">Game files folder: %1$s (reachable over USB)</string>
+    <string name="no_iwads">No games found.\n\nPress Ⓨ to import an IWAD (e.g. doom2.wad or freedoom2.wad), or copy it over USB to:\n%1$s</string>
+    <string name="no_mods">No mods. Any .wad / .pk3 / .zip / .deh copied next to your games shows up here.</string>
+    <string name="preparing">Preparing engine files…</string>
+    <string name="extract_failed">Could not prepare engine files: %1$s</string>
+    <string name="importing">Importing…</string>
+    <string name="need_iwad_import">Import a game (IWAD) first – press Ⓨ.</string>
+    <string name="need_iwad_select">Select a game first.</string>
+    <string name="no_picker">No file picker on this device. Copy files over USB to %1$s</string>
+    <plurals name="imported">
+        <item quantity="one">Imported %d file.</item>
+        <item quantity="other">Imported %d files.</item>
+    </plurals>
+</resources>
