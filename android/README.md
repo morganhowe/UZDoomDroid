@@ -1,5 +1,11 @@
 # UZDoom for Android (controller only)
 
+> [!CAUTION]
+> **AI-generated:** this Android port was written by an AI (Anthropic's Claude) and hasn't been reviewed by a human expert.
+> It is **unofficial** and not supported by the UZDoom team, which does not accept AI-generated code.
+> Never submit it to UZDoom, and report problems [here](https://github.com/morganhowe/UZDoomDroid/issues), not upstream.
+> See the [main README](../README.md) for details.
+
 An Android port of UZDoom built to be played entirely with a gamepad.
 No touch input is needed anywhere: not in the launcher, the game, menus, or error dialogs.
 It runs on phones and tablets with a paired controller, Android TV / Google TV boxes, and Android handhelds

@@ -1,3 +1,77 @@
+> [!CAUTION]
+> ## ⚠️ AI-GENERATED CODE: READ THIS FIRST
+>
+> **The Android port in this repository was written by an AI (Anthropic's Claude), not by a human developer.**
+> That includes all of the Android-specific code, the build scripts, the launcher app, the CI workflow, the app icon,
+> and this README section. The changes are listed under [What the AI wrote](#what-the-ai-wrote) below.
+>
+> - **This is not an official UZDoom release.** It is not made, reviewed, endorsed or supported by the UZDoom team.
+> - **UZDoom does not accept AI-generated code or art.** Its [contribution guidelines](CONTRIBUTING.md) ban it outright,
+>   and undisclosed AI use gets contributors banned from the whole organization.
+>   **Never open a pull request from this fork to UZDoom**, and don't copy code from it into one.
+> - **Don't report problems with this port to UZDoom.** Use this repository's
+>   [issues](https://github.com/morganhowe/UZDoomDroid/issues) instead.
+> - **Lightly tested.** No human expert has reviewed the code. It has been built by CI and tried on one device. Expect bugs.
+>
+> The engine itself is UZDoom, written by its human developers and contributors (see the original README below).
+
+# UZDoomDroid
+
+An unofficial, controller-only Android port of [UZDoom](https://github.com/UZDoom/UZDoom).
+You can play entirely with a gamepad: the launcher, the game, the menus and the error dialogs all work without touch.
+It runs on phones and tablets with a controller, Android TV / Google TV, and Android handhelds.
+
+## Status
+
+| | |
+|---|---|
+| Build | [![Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml/badge.svg?branch=android-port)](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) |
+| Branch | `android-port` |
+| Requires | Android 8.0+, 64-bit ARM, OpenGL ES 2.0+ (3.x recommended), a game controller |
+| Game data | Not included. Bring your own IWAD (e.g. `doom2.wad`) or use the free [Freedoom](https://freedoom.github.io/) |
+
+## Getting the app
+
+1. Open the [Android workflow runs](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml)
+   and click the newest run with a green check.
+2. Under **Artifacts**, download **uzdoom-android** (you need to be signed in to GitHub). Unzip it to get the `.apk`.
+3. Copy the `.apk` to your device, open it, and allow installs from that app when Android asks.
+
+The APK is signed with a debug key. It's fine for personal use, but not for redistribution.
+
+## Playing
+
+1. Open **UZDoom**, connect a controller, and press **Y** to import your `.wad` with the system file picker
+   (or copy files over USB to `Android/data/org.zdoom.uzdoom/files/wads/`).
+2. Pick the game, optionally tick some mods, and press **START**.
+
+Full controller maps, file locations, build instructions and known limitations are in
+**[android/README.md](android/README.md)**.
+
+## What the AI wrote
+
+Everything that makes this an Android port:
+
+- `android/`: Gradle project, the controller-driven launcher, the game activity, the host-tools build, the dependency fetch script
+- `cmake/Android.cmake`: the Android build setup (SDL2, OpenAL Soft, platform defaults)
+- `.github/workflows/android.yml`: the APK build
+- Android-only changes, marked `__ANDROID__` or `ANDROID`, in:
+  `CMakeLists.txt`, `src/CMakeLists.txt`, `libraries/ZWidget/CMakeLists.txt`,
+  `src/common/platform/posix/sdl/{i_main,i_system,i_input,sdlglvideo}.cpp`, `src/common/audio/sound/oalsound.cpp`
+- Changes that make libvpx optional (it's guarded by `USE_LIBVPX`) in `src/common/cutscenes/movieplayer.cpp` and `src/common/textures/animtexture.cpp`
+
+To see every change, compare `trunk...android-port` on GitHub.
+
+## License
+
+Same as UZDoom: **GPLv3 or later**. See the legal section of the original README below and the [licenses](docs/licenses) folder.
+Third-party libraries fetched at build time (SDL2, OpenAL Soft, GCEM) keep their own licenses.
+
+---
+
+<details>
+<summary><b>Original UZDoom README</b></summary>
+
 <div align="center">
 
 [ <img src="branding/misc/logo-bg.svg" alt="UZDoom Icon" style="height: 8em; width: 100%" /> ][repo]
@@ -94,3 +168,5 @@ To build UZDoom from source, please see UZDoom's GitHub [wiki][gh_wiki] for a fu
 
 [badge_trans_games]: https://hosted.weblate.org/widget/doom-engine-games/svg-badge.svg
 [status_trans_games]: https://hosted.weblate.org/engage/doom-engine-games/
+
+</details>
