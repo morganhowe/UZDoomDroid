@@ -132,6 +132,18 @@ CUSTOM_CVAR(Int, uiscale, 0, CVAR_ARCHIVE | CVAR_NOINITCALL)
 	setsizeneeded = true;
 }
 
+// Scale of option menus (and other "_1" clean-scaled text). 0 = automatic.
+CUSTOM_CVAR(Int, m_optionscale, 0, CVAR_ARCHIVE | CVAR_GLOBALCONFIG | CVAR_NOINITCALL)
+{
+	if (self < 0)
+	{
+		self = 0;
+		return;
+	}
+	if (screen != nullptr)
+		V_OutputResized(screen->GetClientWidth(), screen->GetClientHeight());
+}
+
 EXTERN_CVAR(Bool, r_blendmethod);
 
 FARG(width, "Configuration", "Sets " GAMENAME "'s horizontal resolution.", "x",
@@ -294,6 +306,15 @@ void V_UpdateModeSize (int width, int height)
 	if (w < 1360) factor = 1;
 	else if (w < 1920) factor = 2;
 	else factor = int(factor * 0.7);
+
+#ifdef __ANDROID__
+	// Handheld screens are small but high resolution, which makes the desktop
+	// rule above produce unreadable option menus. Size them by height instead
+	// (about 270 virtual lines), keeping at least 560 virtual columns.
+	factor = max(1, min(height / 270, width / 560));
+#endif
+	if (m_optionscale > 0)
+		factor = m_optionscale;
 
 	CleanYfac_1 = CleanXfac_1 = factor;// max(1, int(factor * 0.7));
 	CleanWidth_1 = width / CleanXfac_1;

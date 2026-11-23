@@ -1,0 +1,7 @@
+// Default bindings applied on top of commonbinds.txt in the Android build.
+
+// No vertical look on the right stick by default (most classic maps are
+// designed without it). Rebind "Look up" / "Look down" in Customize Controls
+// to bring it back.
+unbind rstickup
+unbind rstickdown

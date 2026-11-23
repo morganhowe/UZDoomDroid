@@ -1605,6 +1605,7 @@ OptionMenu "ScalingOptions" protected
 {
 	Title "$SCALEMNU_TITLE"
 	ScaleSlider "$HUDMNU_UISCALE",				"uiscale", 0.0, 8.0, 1.0, "$SCALEMNU_ADAPT"
+	ScaleSlider "Menu text scale",				"m_optionscale", 0.0, 8.0, 1.0, "$SCALEMNU_ADAPT"
 	StaticText " "
 	// These will need a new control type.
 	StaticText "$SCALEMNU_OVERRIDE", 1

@@ -90,7 +90,7 @@ back them up over USB.
 | Button | Action |
 |---|---|
 | Left stick | Move / strafe |
-| Right stick | Turn / look |
+| Right stick | Turn (vertical look is off by default: bind *Look up* / *Look down* in Customize Controls to enable it) |
 | RT / LT | Fire / alt-fire |
 | A | Use / open |
 | B | Crouch |
@@ -107,6 +107,7 @@ back them up over USB.
 
 On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B set or clear marks.
 
+Menu text is sized for small screens on Android. Change it in *HUD Options → Scaling Options → Menu text scale*.
 Menus are navigated with the D-pad. Use A to confirm and B to go back. Naming a save shows
 UZDoom's on-screen character grid, so no keyboard is needed.
 Rumble works on controllers that support it. Strength, dead zones and sensitivity are in the
