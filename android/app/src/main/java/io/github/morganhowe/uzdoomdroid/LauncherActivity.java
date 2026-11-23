@@ -1,4 +1,4 @@
-package org.zdoom.uzdoom;
+package io.github.morganhowe.uzdoomdroid;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -44,9 +44,10 @@ import java.util.concurrent.Executors;
  * Game/mod picker. Entirely gamepad driven:
  *   D-pad / left stick  move        A  select/toggle      B  quit
  *   START               play        Y  import files       L1/R1  switch list
+ *   SELECT              licenses
  */
 public class LauncherActivity extends Activity {
-    static final String EXTRA_RELAUNCH_ARGS = "org.zdoom.uzdoom.RELAUNCH_ARGS";
+    static final String EXTRA_RELAUNCH_ARGS = "io.github.morganhowe.uzdoomdroid.RELAUNCH_ARGS";
 
     private static final int REQUEST_IMPORT = 1;
     private static final String PREF_IWAD = "iwad";
@@ -90,6 +91,7 @@ public class LauncherActivity extends Activity {
         playButton.setOnClickListener(v -> play());
         findViewById(R.id.import_button).setOnClickListener(v -> importFiles());
         findViewById(R.id.refresh_button).setOnClickListener(v -> refresh());
+        findViewById(R.id.licenses_button).setOnClickListener(v -> showLicenses());
 
         String folder = getString(R.string.wad_folder_hint, displayPath(EngineData.wadDir(this)));
         ((TextView) findViewById(R.id.folder_hint)).setText(folder);
@@ -141,6 +143,9 @@ public class LauncherActivity extends Activity {
                 return true;
             case KeyEvent.KEYCODE_BUTTON_START:
                 if (first) play();
+                return true;
+            case KeyEvent.KEYCODE_BUTTON_SELECT:
+                if (first) showLicenses();
                 return true;
             case KeyEvent.KEYCODE_BUTTON_Y:
                 if (first) importFiles();
@@ -232,6 +237,10 @@ public class LauncherActivity extends Activity {
 
         saveSelection();
         startGame(args.toArray(new String[0]));
+    }
+
+    private void showLicenses() {
+        startActivity(new Intent(this, LicensesActivity.class));
     }
 
     private void startGame(String[] args) {

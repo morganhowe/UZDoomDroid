@@ -1,4 +1,4 @@
-package org.zdoom.uzdoom;
+package io.github.morganhowe.uzdoomdroid;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,7 +13,7 @@ import org.libsdl.app.SDLActivity;
  * a clean slate.
  */
 public class GameActivity extends SDLActivity {
-    public static final String EXTRA_ARGS = "org.zdoom.uzdoom.ARGS";
+    public static final String EXTRA_ARGS = "io.github.morganhowe.uzdoomdroid.ARGS";
 
     private static volatile boolean sRestartRequested = false;
 

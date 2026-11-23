@@ -15,12 +15,12 @@ def engineDataDir = layout.buildDirectory.dir('engine-data').get().asFile
 def abiList       = (project.findProperty('uzdoom.abis') ?: 'arm64-v8a').split(',').collect { it.trim() }
 
 android {
-    namespace 'org.zdoom.uzdoom'
+    namespace 'io.github.morganhowe.uzdoomdroid'
     compileSdk 35
     ndkVersion '27.2.12479018'
 
     defaultConfig {
-        applicationId 'org.zdoom.uzdoom'
+        applicationId 'io.github.morganhowe.uzdoomdroid'
         minSdk 26
         targetSdk 35
         versionCode 1
@@ -113,6 +113,16 @@ abstract class CollectEngineData extends DefaultTask {
     @InputDirectory
     abstract DirectoryProperty getSourceDir()
 
+    // License texts shown on the launcher's "Licenses" screen.
+    @Internal
+    abstract DirectoryProperty getRepoRoot()
+
+    @Internal
+    abstract DirectoryProperty getDepsDir()
+
+    @InputFiles
+    abstract ConfigurableFileCollection getLicenseInputs()
+
     @OutputDirectory
     abstract DirectoryProperty getOutputDir()
 
@@ -130,9 +140,34 @@ abstract class CollectEngineData extends DefaultTask {
             }
             into dst
         }
+        copyLicenses(new File(outputDir.get().asFile, 'licenses'))
+
         def pk3s = dst.listFiles()?.findAll { it.name.endsWith('.pk3') } ?: []
         if (!pk3s.any { it.name == 'uzdoom.pk3' }) {
             throw new GradleException("uzdoom.pk3 was not produced by the native build (looked in ${src})")
+        }
+    }
+
+    private void copyLicenses(File dst) {
+        def root = repoRoot.get().asFile
+        def deps = depsDir.get().asFile
+        project.delete(dst)
+        // UZDoom and its bundled components
+        project.copy { from(new File(root, 'docs/licenses')); into new File(dst, 'uzdoom') }
+        project.copy { from(new File(root, 'LICENSE')); into dst; rename { 'uzdoom-license.txt' } }
+        project.copy { from(new File(root, 'branding/BRANDING-LICENSE.md')); into dst; rename { 'uzdoom-branding.md' } }
+        // Game-content pk3s (free to share, not for sale)
+        project.copy { from(new File(root, 'wadsrc_bm/static/license.md')); into dst; rename { 'content-brightmaps.md' } }
+        project.copy { from(new File(root, 'wadsrc_extra/nonfree/license.md')); into dst; rename { 'content-game-support.md' } }
+        project.copy { from(new File(root, 'wadsrc_widepix/static/license.md')); into dst; rename { 'content-widepix.md' } }
+        project.copy { from(new File(root, 'fm_banks')) { include '*.txt' }; into new File(dst, 'fm_banks') }
+        // Libraries fetched by fetch-deps.sh
+        project.copy { from(new File(deps, 'SDL/LICENSE.txt')); into dst; rename { 'sdl2.txt' } }
+        project.copy { from(new File(deps, 'openal-soft/COPYING')); into dst; rename { 'openal-soft.txt' } }
+        project.copy { from(new File(deps, 'openal-soft/LICENSE-pffft')); into dst; rename { 'openal-soft-pffft.txt' } }
+        project.copy { from(new File(deps, 'gcem/LICENSE')); into dst; rename { 'gcem.txt' } }
+        ['uzdoom-license.txt', 'sdl2.txt', 'openal-soft.txt', 'gcem.txt', 'content-game-support.md'].each {
+            if (!new File(dst, it).isFile()) throw new GradleException("License file ${it} is missing")
         }
     }
 }
@@ -140,9 +175,14 @@ abstract class CollectEngineData extends DefaultTask {
 androidComponents {
     onVariants(selector().all()) { ApplicationVariant variant ->
         def cap = variant.name.capitalize()
-        def collect = tasks.register("collectEngineData${cap}", CollectEngineData) {
-            dependsOn "externalNativeBuild${cap}"
-            sourceDir.set(new File(engineDataDir, abiList[0]))
+        def collect = tasks.register("collectEngineData${cap}", CollectEngineData) { t ->
+            t.dependsOn "externalNativeBuild${cap}"
+            t.sourceDir.set(new File(engineDataDir, abiList[0]))
+            t.repoRoot.set(repoRoot)
+            t.depsDir.set(depsDir)
+            t.licenseInputs.from(new File(repoRoot, 'docs/licenses'), new File(repoRoot, 'LICENSE'),
+                               new File(depsDir, 'SDL/LICENSE.txt'), new File(depsDir, 'openal-soft/COPYING'),
+                               new File(depsDir, 'gcem/LICENSE'))
         }
         variant.sources.assets?.addGeneratedSourceDirectory(collect, { it.outputDir })
     }

@@ -34,6 +34,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".LicensesActivity"
+            android:exported="false"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode" />
+
         <!-- The engine keeps a lot of global state and calls exit paths that are not
              re-entrant, so each game session gets a fresh process. -->
         <activity

@@ -38,15 +38,15 @@ It runs on phones and tablets with a controller, Android TV / Google TV, and And
 
 1. Open the [Android workflow runs](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml)
    and click the newest run with a green check.
-2. Under **Artifacts**, download **uzdoom-android** (you need to be signed in to GitHub). Unzip it to get the `.apk`.
+2. Under **Artifacts**, download **uzdoomdroid-android** (you need to be signed in to GitHub). Unzip it to get the `.apk`.
 3. Copy the `.apk` to your device, open it, and allow installs from that app when Android asks.
 
 The APK is signed with a debug key. It's fine for personal use, but not for redistribution.
 
 ## Playing
 
-1. Open **UZDoom**, connect a controller, and press **Y** to import your `.wad` with the system file picker
-   (or copy files over USB to `Android/data/org.zdoom.uzdoom/files/wads/`).
+1. Open **UZDoomDroid**, connect a controller, and press **Y** to import your `.wad` with the system file picker
+   (or copy files over USB to `Android/data/io.github.morganhowe.uzdoomdroid/files/wads/`).
 2. Pick the game, optionally tick some mods, and press **START**.
 
 Full controller maps, file locations, build instructions and known limitations are in
@@ -66,10 +66,25 @@ Everything that makes this an Android port:
 
 To see every change, [compare this fork against upstream UZDoom](https://github.com/UZDoom/UZDoom/compare/trunk...morganhowe:UZDoomDroid:android-port).
 
+## Modification notice
+
+As required by the GNU GPL v3, section 5(a): **this is a modified version of UZDoom.**
+
+- **Based on:** UZDoom commit [`678ed12`](https://github.com/UZDoom/UZDoom/commit/678ed12027fec6257a08bfcdbabba06bfcebf8de)
+- **Modified:** starting 2026-11-22, by Claude (AI) at the request of the repository owner
+- **What changed:** Android support. The files are listed under [What the AI wrote](#what-the-ai-wrote), and every change is dated in the commit history.
+
+The app shows the same notice, the source link and every bundled license under **Licenses** in the launcher (press **SELECT**).
+
 ## License
 
 Same as UZDoom: **GPLv3 or later**. See the legal section of the original README below and the [licenses](docs/licenses) folder.
-Third-party libraries fetched at build time (SDL2, OpenAL Soft, GCEM) keep their own licenses.
+Third-party libraries fetched at build time keep their own licenses: SDL2 (zlib), OpenAL Soft (GNU LGPL; shipped as a
+separate `libopenal.so`), and GCEM (Apache 2.0).
+
+The game-content packs (`brightmaps.pk3`, `game_support.pk3`, `game_widescreen_gfx.pk3`) are based on original game
+content. They may be shared for free but **may not be sold**, so don't charge for this app or bundle it with anything paid.
+No game data (IWADs) is included or may be distributed with it.
 
 ---
 

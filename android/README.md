@@ -24,7 +24,7 @@ It runs on phones and tablets with a paired controller, Android TV / Google TV b
 ### On GitHub (easiest)
 
 Push this branch to your fork. The **Android** workflow (`.github/workflows/android.yml`) builds a
-release APK and attaches it as the `uzdoom-android` artifact on the run.
+release APK and attaches it as the `uzdoomdroid-android` artifact on the run.
 
 ### Locally
 
@@ -60,16 +60,16 @@ The launcher shows a **Game** list (IWADs) and a **Mods** list. Add files either
 * **Import (Y button):** opens the Android file picker, which you can navigate with the D-pad.
   Pick one or more files and they are copied in.
 * **USB:** connect to a PC and copy files into
-  `Android/data/org.zdoom.uzdoom/files/wads/`
+  `Android/data/io.github.morganhowe.uzdoomdroid/files/wads/`
 
 A `.wad` with an `IWAD` header (and `.ipk3` / `.iwad` files) appears under **Game**. Everything else
 (`.wad` PWADs, `.pk3`, `.pk7`, `.zip`, `.deh`, `.bex`) appears under **Mods**. Selected mods load in
 alphabetical order.
 
-Advanced: put extra command-line arguments in `Android/data/org.zdoom.uzdoom/files/args.txt`
+Advanced: put extra command-line arguments in `Android/data/io.github.morganhowe.uzdoomdroid/files/args.txt`
 (for example `+map MAP01` or `-warp 1 1`). Lines starting with `#` are ignored.
 
-Saves, `uzdoom.ini`, and screenshots are kept in `Android/data/org.zdoom.uzdoom/files/`, so you can
+Saves, `uzdoom.ini`, and screenshots are kept in `Android/data/io.github.morganhowe.uzdoomdroid/files/`, so you can
 back them up over USB.
 
 ## Controls
@@ -84,6 +84,7 @@ back them up over USB.
 | START | Play |
 | Y | Import files |
 | L1 / R1 | Jump to the Game / Mods list |
+| SELECT | Licenses |
 
 **In game** (UZDoom's default gamepad bindings, all changeable in the controls menu)
 
@@ -114,6 +115,12 @@ Menus are navigated with the D-pad. Use A to confirm and B to go back. Naming a 
 UZDoom's on-screen character grid, so no keyboard is needed.
 Rumble works on controllers that support it. Strength, dead zones and sensitivity are in the
 controller options menu.
+
+## Licenses
+
+Press **SELECT** in the launcher, or choose **Licenses**, to see the GPL notice, the source link, the modification notice,
+and the full license text for every bundled component. Gradle copies these texts into the APK from the source tree and
+`android/deps`.
 
 ## Platform notes and limitations
 

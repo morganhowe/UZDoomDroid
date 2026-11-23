@@ -90,7 +90,7 @@ static void Linux_I_TryRestart(char **argv)
 //
 // Android support
 //
-// The Java side (org.zdoom.uzdoom.GameActivity) runs the engine in its own
+// The Java side (io.github.morganhowe.uzdoomdroid.GameActivity) runs the engine in its own
 // process, so all engine state is discarded when the game exits.
 //
 //==========================================================================

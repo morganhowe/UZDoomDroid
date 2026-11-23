@@ -150,6 +150,12 @@
             android:nextFocusUp="@id/mod_list"
             android:text="@string/refresh" />
 
+        <Button
+            android:id="@+id/licenses_button"
+            style="@style/LauncherButton"
+            android:nextFocusUp="@id/mod_list"
+            android:text="@string/licenses" />
+
         <TextView
             android:id="@+id/status"
             android:layout_width="0dp"

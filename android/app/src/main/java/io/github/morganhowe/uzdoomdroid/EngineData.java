@@ -1,4 +1,4 @@
-package org.zdoom.uzdoom;
+package io.github.morganhowe.uzdoomdroid;
 
 import android.content.Context;
 import android.content.SharedPreferences;

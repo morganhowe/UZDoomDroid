@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">UZDoom</string>
+    <string name="app_name">UZDoomDroid</string>
     <string name="games">Game</string>
     <string name="mods">Mods (optional)</string>
     <string name="play">Play</string>
     <string name="import_files">Import files</string>
     <string name="refresh">Refresh</string>
-    <string name="controls_hint">Ⓐ select · Ⓑ quit · START play · Ⓨ import · L1 / R1 switch list</string>
+    <string name="licenses">Licenses</string>
+    <string name="licenses_hint">D-pad move / scroll · Ⓐ read · Ⓑ back · L1 / R1 page up / down</string>
+    <string name="about_title">About UZDoomDroid</string>
+    <string name="about_text">UZDoomDroid: an unofficial, controller-only Android port of UZDoom.\n\nTHIS IS A MODIFIED VERSION OF UZDOOM. The Android port was written by an AI (Anthropic\'s Claude) and is not made, reviewed, endorsed or supported by the UZDoom team. Do not report problems with it to UZDoom.\n\nModification notice (GNU GPL v3, section 5a): modified from UZDoom commit 678ed12027fec6257a08bfcdbabba06bfcebf8de, starting 2026-11-22. The changes add Android support. The repository README lists them, and the commit history has the full record.\n\nSource code (complete and corresponding, including the build scripts):\nhttps://github.com/morganhowe/UZDoomDroid\n\nThis program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nThis program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nThe game-content files (brightmaps.pk3, game_support.pk3, game_widescreen_gfx.pk3) are based on original game content. They may be shared freely but may not be sold. See their entries in this list.\n\nNo game data is included. You need your own copy of the game files.\n\nThird-party libraries, used unmodified:\n• SDL 2.32.8 (zlib license): https://github.com/libsdl-org/SDL\n• OpenAL Soft 1.24.3 (GNU LGPL), shipped as libopenal.so, which you may replace: https://github.com/kcat/openal-soft\n• GCEM (Apache License 2.0): https://github.com/kthohr/gcem\n\nUZDoom: Copyright 1993-1996 id Software, 1999-2016 Marisa Heit, 2002-2016 Christoph Oelckers, 2017-2025 GZDoom Maintainers and Contributors, 2025-2026 UZDoom Maintainers and Contributors.</string>
+    <string name="controls_hint">Ⓐ select · Ⓑ quit · START play · Ⓨ import · L1 / R1 switch list · SELECT licenses</string>
     <string name="wad_folder_hint">Game files folder: %1$s (reachable over USB)</string>
     <string name="no_iwads">No games found.\n\nPress Ⓨ to import an IWAD (e.g. doom2.wad or freedoom2.wad), or copy it over USB to:\n%1$s</string>
     <string name="no_mods">No mods. Any .wad / .pk3 / .zip / .deh copied next to your games shows up here.</string>
