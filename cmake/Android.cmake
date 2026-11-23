@@ -36,6 +36,11 @@ set( ENABLE_IWYU OFF CACHE BOOL "" )
 set( SEND_ANON_STATS OFF CACHE BOOL "" )
 set( NO_OPENMP ON CACHE BOOL "" )
 
+# Bundled FreeType: no bzip2-compressed fonts, and nothing gets installed on Android
+# (its install(EXPORT) otherwise trips over the internal bz2 target).
+set( FT_DISABLE_BZIP2 ON CACHE BOOL "" FORCE )
+set( SKIP_INSTALL_ALL TRUE )
+
 # ---------------------------------------------------------------------------
 # SDL2 (shared, as required by SDLActivity)
 # ---------------------------------------------------------------------------
