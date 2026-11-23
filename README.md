@@ -15,6 +15,10 @@
 >
 > The engine itself is UZDoom, written by its human developers and contributors (see the original README below).
 
+> [!NOTE]
+> **From the repository owner:**
+> This is a vibe-coded port of UZDoom to Android. I do not expect to keep this maintained; I only wanted to test it out. All credit should go to the UZDoom team, I can take no credit for anything in this project.
+
 # UZDoomDroid
 
 An unofficial, controller-only Android port of [UZDoom](https://github.com/UZDoom/UZDoom).
@@ -26,7 +30,7 @@ It runs on phones and tablets with a controller, Android TV / Google TV, and And
 | | |
 |---|---|
 | Build | [![Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml/badge.svg?branch=android-port)](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) |
-| Branch | `android-port` |
+| Maintenance | Not maintained. This was an experiment |
 | Requires | Android 8.0+, 64-bit ARM, OpenGL ES 2.0+ (3.x recommended), a game controller |
 | Game data | Not included. Bring your own IWAD (e.g. `doom2.wad`) or use the free [Freedoom](https://freedoom.github.io/) |
 
@@ -60,7 +64,7 @@ Everything that makes this an Android port:
   `src/common/platform/posix/sdl/{i_main,i_system,i_input,sdlglvideo}.cpp`, `src/common/audio/sound/oalsound.cpp`
 - Changes that make libvpx optional (it's guarded by `USE_LIBVPX`) in `src/common/cutscenes/movieplayer.cpp` and `src/common/textures/animtexture.cpp`
 
-To see every change, compare `trunk...android-port` on GitHub.
+To see every change, [compare this fork against upstream UZDoom](https://github.com/UZDoom/UZDoom/compare/trunk...morganhowe:UZDoomDroid:android-port).
 
 ## License
 
