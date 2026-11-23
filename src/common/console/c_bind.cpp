@@ -897,13 +897,6 @@ void C_SetDefaultKeys(const char* baseconfig, const TArray<int> *filter = nullpt
 		else
 			ReadBindings(lump, true, filter);
 	}
-
-#ifdef __ANDROID__
-	// Controller-friendly adjustments for the Android port, applied last.
-	lump = fileSystem.CheckNumForFullName("engine/androidbinds.txt");
-	if (lump >= 0 && fileSystem.GetFileContainer(lump) <= fileSystem.GetMaxIwadNum())
-		ReadBindings(lump, true, filter);
-#endif
 }
 
 //=============================================================================

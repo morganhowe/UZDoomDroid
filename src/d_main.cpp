@@ -637,7 +637,15 @@ void D_Render(std::function<void()> action, bool interpolate)
 //
 //==========================================================================
 
-CUSTOM_CVAR (Int, dmflags, 0, CVAR_SERVERINFO | CVAR_NOINITCALL)
+#ifdef __ANDROID__
+// Android port: "Allow jump" and "Allow freelook" default to Off, matching
+// the original games' controls. (dmflags is not saved between sessions.)
+static constexpr int DMFLAGS_DEFAULT = DF_NO_JUMP | DF_NO_FREELOOK;
+#else
+static constexpr int DMFLAGS_DEFAULT = 0;
+#endif
+
+CUSTOM_CVAR (Int, dmflags, DMFLAGS_DEFAULT, CVAR_SERVERINFO | CVAR_NOINITCALL)
 {
 	// In case DF_NO_FREELOOK was changed, reinitialize the sky
 	// map. (If no freelook, then no need to stretch the sky.)

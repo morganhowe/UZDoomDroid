@@ -90,7 +90,7 @@ back them up over USB.
 | Button | Action |
 |---|---|
 | Left stick | Move / strafe |
-| Right stick | Turn (vertical look is off by default: bind *Look up* / *Look down* in Customize Controls to enable it) |
+| Right stick | Turn / look up and down (looking needs freelook, see below) |
 | RT / LT | Fire / alt-fire |
 | A | Use / open |
 | B | Crouch |
@@ -107,6 +107,8 @@ back them up over USB.
 
 On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B set or clear marks.
 
+Jumping and freelook are **off by default**, like the original games. To use them, set *Options → Gameplay Options →
+Allow jump / Allow freelook* to On or Default. This resets each time the game starts.
 Menu text is sized for small screens on Android. Change it in *HUD Options → Scaling Options → Menu text scale*.
 Menus are navigated with the D-pad. Use A to confirm and B to go back. Naming a save shows
 UZDoom's on-screen character grid, so no keyboard is needed.
