@@ -2,10 +2,10 @@
 <resources>
     <color name="bg">#FF15171C</color>
     <color name="panel">#FF1F232B</color>
-    <color name="accent">#FFE8833A</color>
-    <color name="accent_dim">#55E8833A</color>
+    <color name="accent">#FFE54A2A</color>
+    <color name="accent_dim">#55E54A2A</color>
     <color name="text">#FFECEFF4</color>
     <color name="text_dim">#FF9AA3B2</color>
     <!-- App icon -->
-    <color name="icon_bg">#FF1E1A4A</color>
+    <color name="icon_bg">#FF1C181B</color>
 </resources>
