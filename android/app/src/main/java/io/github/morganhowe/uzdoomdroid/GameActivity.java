@@ -3,6 +3,8 @@ package io.github.morganhowe.uzdoomdroid;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Process;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 
 import org.libsdl.app.SDLActivity;
@@ -39,6 +41,19 @@ public class GameActivity extends SDLActivity {
     protected String[] getArguments() {
         String[] args = getIntent().getStringArrayExtra(EXTRA_ARGS);
         return args != null ? args : new String[0];
+    }
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent ev) {
+        boolean handled = super.dispatchGenericMotionEvent(ev); // SDL reads it here
+        // Android turns controller stick/hat motion that nobody handled (e.g. while SDL
+        // is still detecting a newly connected controller) into synthetic, auto-repeating
+        // D-pad key presses. Those can get stuck and scroll menus forever, so always
+        // report controller motion as handled.
+        if (ev.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) {
+            return true;
+        }
+        return handled;
     }
 
     /** Called from native code (i_main.cpp) when the engine asks to restart itself. */

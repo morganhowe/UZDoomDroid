@@ -651,6 +651,14 @@ void MessagePump (const SDL_Event &sev)
 		if (sev.type == SDL_JOYDEVICEADDED && SDL_IsGameController(sev.jdevice.which)) // DeviceIndex Here
 			break; // skip double event
 		I_UpdateDeviceList();
+#ifdef __ANDROID__
+		// Until a controller is opened, SDL's Android backend reports its D-pad and
+		// face buttons as keyboard keys (arrows, Enter, ...). A button pressed before
+		// the controller was opened and released after it then never gets its
+		// keyboard key-up, and the menu auto-repeats that key forever. Release all
+		// keyboard keys now that the controller is handled as a controller.
+		SDL_ResetKeyboard();
+#endif
 		event.type = EV_DeviceChange;
 		D_PostEvent (&event);
 		break;
