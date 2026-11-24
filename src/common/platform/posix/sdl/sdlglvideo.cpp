@@ -302,6 +302,45 @@ private:
 
 // CODE --------------------------------------------------------------------
 
+#if defined(HAVE_VULKAN) && defined(__ANDROID__)
+#include <atomic>
+#include <sys/stat.h>
+
+// Android destroys the app's window surface while it is in the background, so
+// the Vulkan surface must be recreated on return (see VkFramebufferManager).
+static std::atomic<bool> AndroidVulkanSurfaceReset{false};
+
+void I_AndroidRequestVulkanSurfaceReset()
+{
+	if (Priv::vulkanEnabled) AndroidVulkanSurfaceReset = true;
+}
+
+bool I_AndroidTakeVulkanSurfaceReset()
+{
+	return AndroidVulkanSurfaceReset.exchange(false);
+}
+
+// A broken GPU driver can crash outright instead of reporting an error, which
+// would make the game crash on every launch. A marker file exists while Vulkan
+// is starting; finding it at startup means the last attempt never got a frame
+// on screen.
+static FString AndroidVulkanMarker()
+{
+	const char *home = getenv("HOME");
+	return FString(home ? home : ".") + "/config/vulkan-starting";
+}
+
+void I_AndroidVulkanStarted()
+{
+	static bool done = false;
+	if (!done)
+	{
+		done = true;
+		remove(AndroidVulkanMarker().GetChars());
+	}
+}
+#endif
+
 #ifdef HAVE_VULKAN
 void I_GetVulkanDrawableSize(int *width, int *height)
 {
@@ -341,7 +380,25 @@ SDLVideo::SDLVideo ()
 	}
 
 #ifdef HAVE_VULKAN
+#ifdef __ANDROID__
+	// There is no desktop OpenGL on Android: "OpenGL" and "Vulkan" both mean
+	// "Vulkan if the device supports it, else OpenGL ES". Only choosing
+	// "OpenGL ES" skips Vulkan.
+	Priv::vulkanEnabled = vid_preferbackend != BACKEND_OPENGLES;
+	{
+		struct stat st;
+		if (Priv::vulkanEnabled && stat(AndroidVulkanMarker().GetChars(), &st) == 0)
+		{
+			remove(AndroidVulkanMarker().GetChars());
+			Printf(TEXTCOLOR_RED "Vulkan crashed during the last start. Switching to OpenGL ES; "
+				"choose Vulkan in Display Options > Video mode to try again.\n");
+			vid_preferbackend = BACKEND_OPENGLES;
+			Priv::vulkanEnabled = false;
+		}
+	}
+#else
 	Priv::vulkanEnabled = vid_preferbackend == BACKEND_VULKAN;
+#endif
 
 	if (Priv::vulkanEnabled)
 	{
@@ -386,6 +443,10 @@ DFrameBuffer *SDLVideo::CreateFrameBuffer ()
 #ifdef HAVE_VULKAN
 	if (Priv::vulkanEnabled)
 	{
+#ifdef __ANDROID__
+		if (FILE *marker = fopen(AndroidVulkanMarker().GetChars(), "w"))
+			fclose(marker);
+#endif
 		try
 		{
 			unsigned int count = 64;
@@ -416,6 +477,10 @@ DFrameBuffer *SDLVideo::CreateFrameBuffer ()
 
 			Printf(TEXTCOLOR_RED "Initialization of Vulkan failed: %s\n", error.what());
 			Priv::vulkanEnabled = false;
+#ifdef __ANDROID__
+			remove(AndroidVulkanMarker().GetChars()); // a clean failure, not a crash
+			Printf("Using OpenGL ES instead.\n");
+#endif
 		}
 	}
 #endif

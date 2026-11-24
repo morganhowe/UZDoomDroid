@@ -38,6 +38,9 @@ public:
 	~VkFramebufferManager();
 
 	void AcquireImage();
+#ifdef __ANDROID__
+	void RecreateAndroidSurface();
+#endif
 	void QueuePresent();
 
 	std::map<int, std::unique_ptr<VulkanFramebuffer>> Framebuffers;

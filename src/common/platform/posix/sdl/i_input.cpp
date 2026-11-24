@@ -52,6 +52,9 @@
 #include "name.h"
 
 void OpenAL_AndroidSetDevicePaused(bool paused);
+#ifdef HAVE_VULKAN
+void I_AndroidRequestVulkanSurfaceReset();
+#endif
 
 // SDL blocks the game thread as soon as Android pauses the app (screen off,
 // Home, app switcher), before the engine has handled the focus-loss event that
@@ -84,6 +87,9 @@ static void Android_PauseWithMenu()
 static void Android_ReturnToForeground()
 {
 	OpenAL_AndroidSetDevicePaused(false);
+#ifdef HAVE_VULKAN
+	I_AndroidRequestVulkanSurfaceReset();
+#endif
 	I_ResetFrameTime();
 	Android_PauseWithMenu();
 }

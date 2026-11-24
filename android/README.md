@@ -60,7 +60,9 @@ Releases are signed with a permanent key so updates install over each other. CI 
 | `ANDROID_KEYSTORE_PASSWORD` | Its password (the key alias is `uzdoomdroid`) |
 
 A release build fails if the secrets are missing, or if the APK's certificate doesn't match
-`android/signing-cert-sha256.txt`. Other builds without the secrets use a temporary debug key, and print a warning.
+`android/signing-cert-sha256.txt`. Builds in this repository (including test builds from Actions) are signed with the
+release key too, so they install over a release. Builds without the secrets, such as from a fork, use a temporary
+debug key and print a warning.
 
 To sign locally, set `UZDOOM_KEYSTORE` (path to the keystore) and `UZDOOM_KEYSTORE_PASSWORD` before running Gradle.
 Keep a backup of the keystore: **if it's lost, no future version can update an installed release.**
@@ -160,9 +162,17 @@ and the full license text for every bundled component. Gradle copies these texts
 
 ## Platform notes and limitations
 
-* **Renderer:** OpenGL ES, using UZDoom's GLES backend, plus the software renderer. The Vulkan
-  backend is turned off for Android (`HAVE_VULKAN=OFF` in `cmake/Android.cmake`). You can try it
-  by enabling it, but it hasn't been tested on Android.
+* **Renderer:** Vulkan where the device supports it, otherwise OpenGL ES (the software renderer is also available).
+  Vulkan is UZDoom's full-featured backend, the same as on desktop, and the best choice for demanding mods. Its
+  device needs: anisotropic filtering, fragment stores and atomics, multi-draw-indirect and independent blending.
+  Recent Snapdragon (Adreno 6xx and later) GPUs have all four; some Mali and PowerVR GPUs don't, and fall back to
+  OpenGL ES automatically.
+  * To force OpenGL ES, set *Display Options → Video mode → Preferred rendering API* to **OpenGL ES** and restart.
+    On Android, the "OpenGL" and "Vulkan" settings both mean "Vulkan if supported".
+  * If Vulkan ever crashes before showing a frame (a GPU driver bug), the next start switches to OpenGL ES by itself
+    and says so in the console.
+  * Android throws away the window surface while the app is in the background; the Vulkan renderer rebuilds it when
+    you return.
 * **Video cutscenes:** VP8/VP9 (`.ivf`) movies are disabled because libvpx isn't built for Android.
   Other movie formats (ANM, MVE, Smacker) still play.
 * **Music and sound:** everything plays: MIDI (FluidSynth, OPL, OPN, Timidity, WildMidi), tracker and

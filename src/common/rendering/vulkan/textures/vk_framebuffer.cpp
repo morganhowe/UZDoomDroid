@@ -28,6 +28,14 @@
 #include "vulkan/renderer/vk_postprocess.h"
 #include "vk_framebuffer.h"
 
+#ifdef __ANDROID__
+#include <zvulkan/vulkaninstance.h>
+#include <zvulkan/vulkansurface.h>
+bool I_CreateVulkanSurface(VkInstance instance, VkSurfaceKHR *surface);
+bool I_AndroidTakeVulkanSurfaceReset();
+void I_AndroidVulkanStarted();
+#endif
+
 CVAR(Bool, vk_hdr, false, CVAR_ARCHIVE | CVAR_GLOBALCONFIG);
 CVAR(Bool, vk_exclusivefullscreen, false, CVAR_ARCHIVE | CVAR_GLOBALCONFIG);
 
@@ -45,8 +53,37 @@ VkFramebufferManager::~VkFramebufferManager()
 {
 }
 
+#ifdef __ANDROID__
+// Android destroys the window surface while the app is in the background, so
+// the old VkSurfaceKHR is dead when the app returns. Replace it with one for
+// the new window, and rebuild the swapchain on it.
+void VkFramebufferManager::RecreateAndroidSurface()
+{
+	VulkanDevice *device = fb->device.get();
+	vkDeviceWaitIdle(device->device);
+
+	Framebuffers.clear();
+	RenderFinishedSemaphores.clear();
+	SwapChain.reset(); // the swapchain must go before the surface it was made for
+
+	auto surface = device->Surface;
+	VkSurfaceKHR newSurface = VK_NULL_HANDLE;
+	if (!I_CreateVulkanSurface(surface->Instance->Instance, &newSurface))
+		VulkanError("Could not recreate the Vulkan surface after resuming");
+	vkDestroySurfaceKHR(surface->Instance->Instance, surface->Surface, nullptr);
+	surface->Surface = newSurface;
+
+	SwapChain = VulkanSwapChainBuilder().Create(device); // starts out lost: rebuilt below
+}
+#endif
+
 void VkFramebufferManager::AcquireImage()
 {
+#ifdef __ANDROID__
+	if (I_AndroidTakeVulkanSurfaceReset())
+		RecreateAndroidSurface();
+#endif
+
 	bool exclusiveFullscreen = fb->IsFullscreen() && vk_exclusivefullscreen;
 	if (SwapChain->Lost() || fb->GetClientWidth() != CurrentWidth || fb->GetClientHeight() != CurrentHeight || fb->GetVSync() != CurrentVSync || CurrentHdr != vk_hdr || CurrentExclusiveFullscreen != exclusiveFullscreen)
 	{
@@ -72,6 +109,9 @@ void VkFramebufferManager::AcquireImage()
 	PresentImageIndex = SwapChain->AcquireImage(SwapChainImageAvailableSemaphore.get());
 	if (PresentImageIndex != -1)
 	{
+#ifdef __ANDROID__
+		I_AndroidVulkanStarted();
+#endif
 		fb->GetPostprocess()->DrawPresentTexture(fb->mOutputLetterbox, true, false);
 	}
 }

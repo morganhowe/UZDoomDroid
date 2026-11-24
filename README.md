@@ -31,7 +31,7 @@ It runs on phones and tablets with a controller, Android TV / Google TV, and And
 |---|---|
 | Build | [![Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml/badge.svg?branch=android-port)](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) |
 | Maintenance | Not maintained. This was an experiment |
-| Requires | Android 8.0+, 64-bit ARM, OpenGL ES 2.0+ (3.x recommended), a game controller |
+| Requires | Android 8.0+, 64-bit ARM, a game controller. Vulkan GPU recommended (falls back to OpenGL ES 2.0+) |
 | Game data | Not included. Bring your own IWAD (e.g. `doom2.wad`) or use the free [Freedoom](https://freedoom.github.io/) |
 
 ## Getting the app
@@ -41,7 +41,7 @@ Copy it to your device, open it, and allow installs from that app when Android a
 
 Releases from v0.0.3 on are signed with a permanent key, so later versions install over earlier ones and keep your
 saves. Coming from v0.0.1 or v0.0.2, uninstall those first. Each release lists its signing certificate's SHA-256.
-Test builds from Actions are signed with a temporary key and can't update a release install.
+Test builds from Actions are signed with the same key, so they install over a release too.
 
 Test builds from every push are also available under
 [Actions → Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) → newest green run →
