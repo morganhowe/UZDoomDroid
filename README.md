@@ -39,8 +39,9 @@ It runs on phones and tablets with a controller, Android TV / Google TV, and And
 Download the latest `UZDoomDroid-v*.apk` from **[Releases](https://github.com/morganhowe/UZDoomDroid/releases)**.
 Copy it to your device, open it, and allow installs from that app when Android asks.
 
-The APK is signed with a temporary build key. It's fine for personal use, but a later version may need you to uninstall
-the old one first.
+Releases from v0.0.3 on are signed with a permanent key, so later versions install over earlier ones and keep your
+saves. Coming from v0.0.1 or v0.0.2, uninstall those first. Each release lists its signing certificate's SHA-256.
+Test builds from Actions are signed with a temporary key and can't update a release install.
 
 Test builds from every push are also available under
 [Actions → Android](https://github.com/morganhowe/UZDoomDroid/actions/workflows/android.yml) → newest green run →

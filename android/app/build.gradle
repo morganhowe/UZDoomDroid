@@ -14,6 +14,11 @@ def hostToolsDir  = layout.buildDirectory.dir('hosttools').get().asFile
 def engineDataDir = layout.buildDirectory.dir('engine-data').get().asFile
 def abiList       = (project.findProperty('uzdoom.abis') ?: 'arm64-v8a').split(',').collect { it.trim() }
 
+// Release signing key. CI decodes it from the repository secrets (see
+// .github/workflows/android.yml). Without it, release builds fall back to the
+// debug key, which is fine for testing but can't update an installed release.
+def releaseKeystore = System.getenv('UZDOOM_KEYSTORE')
+
 android {
     namespace 'io.github.morganhowe.uzdoomdroid'
     compileSdk 35
@@ -23,8 +28,8 @@ android {
         applicationId 'io.github.morganhowe.uzdoomdroid'
         minSdk 26
         targetSdk 35
-        versionCode 2
-        versionName '0.0.2'
+        versionCode 3
+        versionName '0.0.3'
 
         ndk {
             abiFilters(*abiList)
@@ -56,12 +61,22 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            if (releaseKeystore) {
+                storeFile file(releaseKeystore)
+                storeType 'pkcs12'
+                storePassword System.getenv('UZDOOM_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('UZDOOM_KEY_ALIAS') ?: 'uzdoomdroid'
+                keyPassword System.getenv('UZDOOM_KEY_PASSWORD') ?: System.getenv('UZDOOM_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
-            // Signed with the debug key so CI artifacts install directly.
-            // Configure a real signing key before distributing.
-            signingConfig signingConfigs.debug
+            signingConfig releaseKeystore ? signingConfigs.release : signingConfigs.debug
         }
     }
 

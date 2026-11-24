@@ -49,8 +49,21 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 To build more ABIs: `./gradlew assembleRelease -Puzdoom.abis=arm64-v8a,x86_64`.
 
-The release APK is signed with the debug key so it installs directly. Set up a real signing
-config in `app/build.gradle` before you distribute it.
+### Signing
+
+Releases are signed with a permanent key so updates install over each other. CI reads it from two repository secrets
+(Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | The PKCS#12 keystore, base64-encoded |
+| `ANDROID_KEYSTORE_PASSWORD` | Its password (the key alias is `uzdoomdroid`) |
+
+A release build fails if the secrets are missing, or if the APK's certificate doesn't match
+`android/signing-cert-sha256.txt`. Other builds without the secrets use a temporary debug key, and print a warning.
+
+To sign locally, set `UZDOOM_KEYSTORE` (path to the keystore) and `UZDOOM_KEYSTORE_PASSWORD` before running Gradle.
+Keep a backup of the keystore: **if it's lost, no future version can update an installed release.**
 
 ### How the build fits together
 

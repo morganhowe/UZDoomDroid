@@ -65,6 +65,8 @@ public class LauncherActivity extends Activity {
     private ListView modList;
     private Button playButton;
     private TextView status;
+    private String idleStatus = "";
+    private final Runnable restoreStatus = () -> status.setText(idleStatus);
 
     private final List<File> iwads = new ArrayList<>();
     private final List<File> mods = new ArrayList<>();
@@ -93,8 +95,8 @@ public class LauncherActivity extends Activity {
         findViewById(R.id.refresh_button).setOnClickListener(v -> refresh());
         findViewById(R.id.licenses_button).setOnClickListener(v -> showLicenses());
 
-        String folder = getString(R.string.wad_folder_hint, displayPath(EngineData.wadDir(this)));
-        ((TextView) findViewById(R.id.folder_hint)).setText(folder);
+        idleStatus = getString(R.string.wad_folder_hint, displayPath(EngineData.wadDir(this)));
+        status.setText(idleStatus);
         ((TextView) findViewById(R.id.iwad_empty)).setText(getString(R.string.no_iwads, displayPath(EngineData.wadDir(this))));
 
         refresh();
@@ -182,7 +184,7 @@ public class LauncherActivity extends Activity {
             maybeRelaunch(intent);
             return;
         }
-        status.setText(R.string.preparing);
+        showStatus(getString(R.string.preparing), false);
         io.execute(() -> {
             IOException error = null;
             try {
@@ -193,12 +195,12 @@ public class LauncherActivity extends Activity {
             final IOException err = error;
             ui.post(() -> {
                 if (err != null) {
-                    status.setText(getString(R.string.extract_failed, err.getMessage()));
+                    showStatus(getString(R.string.extract_failed, err.getMessage()), false);
                     return;
                 }
                 engineReady = true;
                 playButton.setEnabled(true);
-                status.setText("");
+                status.setText(idleStatus);
                 maybeRelaunch(getIntent());
             });
         });
@@ -238,6 +240,16 @@ public class LauncherActivity extends Activity {
 
         saveSelection();
         startGame(args.toArray(new String[0]));
+    }
+
+    /**
+     * Shows a one-line message in the header. Temporary messages go back to the
+     * folder hint after a few seconds.
+     */
+    private void showStatus(String message, boolean temporary) {
+        ui.removeCallbacks(restoreStatus);
+        status.setText(message);
+        if (temporary) ui.postDelayed(restoreStatus, 5000);
     }
 
     private void showLicenses() {
@@ -408,7 +420,7 @@ public class LauncherActivity extends Activity {
         }
         if (uris.isEmpty()) return;
 
-        status.setText(R.string.importing);
+        showStatus(getString(R.string.importing), false);
         io.execute(() -> {
             int ok = 0;
             for (Uri uri : uris) {
@@ -416,7 +428,7 @@ public class LauncherActivity extends Activity {
             }
             final int copied = ok;
             ui.post(() -> {
-                status.setText(getResources().getQuantityString(R.plurals.imported, copied, copied));
+                showStatus(getResources().getQuantityString(R.plurals.imported, copied, copied), true);
                 refresh();
             });
         });

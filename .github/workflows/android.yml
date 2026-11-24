@@ -48,9 +48,44 @@ jobs:
           key: android-cxx-${{ hashFiles('android/fetch-deps.sh', 'cmake/Android.cmake') }}-${{ github.sha }}
           restore-keys: android-cxx-${{ hashFiles('android/fetch-deps.sh', 'cmake/Android.cmake') }}-
 
+      # Permanent release key, stored as two repository secrets:
+      #   ANDROID_KEYSTORE_BASE64    the PKCS#12 keystore, base64-encoded
+      #   ANDROID_KEYSTORE_PASSWORD  its password
+      # Without them, test builds use the debug key; releases refuse to build.
+      - name: Set up release signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "UZDOOM_KEYSTORE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+            echo "Signing with the release key"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            echo "::error::Release builds need the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD repository secrets"
+            exit 1
+          else
+            echo "::warning::No release key secrets; signing with a temporary debug key"
+          fi
+
       - name: Build release APK
         working-directory: android
+        env:
+          UZDOOM_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew --no-daemon --stacktrace assembleRelease
+
+      - name: Check APK signature
+        run: |
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | tee signature.txt
+          DIGEST=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signature.txt)
+          EXPECTED=$(tr -d ' \n' < android/signing-cert-sha256.txt)
+          echo "Signing certificate SHA-256: $DIGEST"
+          if [ "${{ github.event_name }}" = "release" ] && [ "$DIGEST" != "$EXPECTED" ]; then
+            echo "::error::APK is not signed with the release key ($EXPECTED)"
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/release.p12"
 
       - name: Check APK contents
         run: |
@@ -85,7 +120,8 @@ jobs:
           sha256sum "$OUT" > "$OUT.sha256"
           NOTES="android/release-notes/$TAG.md"
           [ -f "$NOTES" ] || NOTES=/dev/null
-          { cat "$NOTES"; printf '\n\n**SHA-256:** `%s`\n' "$(cut -d' ' -f1 "$OUT.sha256")"; } > notes.md
+          CERT=$(tr -d ' \n' < android/signing-cert-sha256.txt)
+          { cat "$NOTES"; printf '\n\n**APK SHA-256:** `%s`\n\n**Signing certificate SHA-256:** `%s`\n' "$(cut -d' ' -f1 "$OUT.sha256")" "$CERT"; } > notes.md
           gh release upload "$TAG" "$OUT" "$OUT.sha256" --clobber
           gh release edit "$TAG" --title "UZDoomDroid $TAG" --notes-file notes.md
 
