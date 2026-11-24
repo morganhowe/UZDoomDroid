@@ -784,6 +784,12 @@ void FGameConfigFile::DoGlobalSetup ()
 			if (scale != NULL) scale->ResetToDefault();
 		}
 	}
+	if (AndroidSettingsVer < 2)
+	{
+		// The second-screen map's default zoom went from 2x to 1x.
+		FBaseCVar *zoom = FindCVar("am_secondscreen_zoom", NULL);
+		if (zoom != NULL) zoom->ResetToDefault();
+	}
 #endif
 
 	OkayToWrite = true;
@@ -1062,7 +1068,7 @@ void FGameConfigFile::ArchiveGlobalData ()
 	SetValueForKey ("Version", ENGINELASTRUNVERSION);
 	SetValueForKey ("Release", VERSIONSTR);
 #ifdef __ANDROID__
-	SetValueForKey ("AndroidSettings", "1");
+	SetValueForKey ("AndroidSettings", "2");
 #endif
 
 	SetSection ("GlobalSettings", true);

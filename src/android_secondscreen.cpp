@@ -11,9 +11,9 @@
 // backend (Vulkan, OpenGL ES or software), and the game thread never waits on
 // the second display.
 //
-// Only untextured shapes are drawn: map lines, the player arrow, keys, the
-// crosshair and background. Textured extras (mark numbers, thing sprites,
-// textured floors, background images) are skipped.
+// Textured shapes (text, mark numbers, sprites, background images) are drawn
+// with nearest-neighbour sampling; the textures are converted to plain RGBA on
+// the game thread and cached.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,14 +26,18 @@
 #include <algorithm>
 #include <cmath>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "c_cvars.h"
 #include "gamestate.h"
 #include "i_time.h"
 #include "printf.h"
+#include "renderstyle.h"
+#include "textures.h"
 #include "v_2ddrawer.h"
 
 EXTERN_CVAR(Bool, am_secondscreen)
@@ -43,14 +47,34 @@ bool AM_DrawSecondary(F2DDrawer *drawer, int w, int h);
 namespace
 {
 
+// A texture converted for the CPU: RGBA bytes in memory order (R, G, B, A).
+struct TexImage
+{
+	int w = 0, h = 0;
+	std::vector<uint32_t> px;
+};
+
 struct Prim
 {
 	enum Type : uint8_t { Triangle, Line, Point };
 	Type type;
-	uint8_t r, g, b, a;
+	uint8_t r, g, b, a;		// vertex colour
+	uint8_t or_, og, ob;	// additive overlay colour (textured only)
+	uint8_t mode;			// ETexMode (textured only)
 	bool scissor;
+	bool wrap;
+	const TexImage *tex;	// nullptr: flat colour
 	float x[3], y[3];
+	float u[3], v[3];
 	int clip[4]; // left, top, right, bottom (exclusive)
+};
+
+// One frame for the worker, plus the textures it uses (kept alive with it).
+struct Frame
+{
+	std::vector<Prim> prims;
+	std::vector<std::shared_ptr<const TexImage>> textures;
+	void clear() { prims.clear(); textures.clear(); }
 };
 
 std::mutex Lock;
@@ -59,7 +83,7 @@ ANativeWindow *Window = nullptr;	// guarded by Lock
 int WindowW = 0, WindowH = 0;		// guarded by Lock
 bool Drawing = false;				// worker is drawing into Window
 bool HavePending = false;			// a new frame is waiting for the worker
-std::vector<Prim> Pending;			// guarded by Lock
+Frame Pending;						// guarded by Lock
 bool WorkerStarted = false;
 unsigned Generation = 0;			// bumped for every new surface; guarded by Lock
 
@@ -69,19 +93,57 @@ unsigned Generation = 0;			// bumped for every new surface; guarded by Lock
 //
 //==========================================================================
 
-inline void Blend(uint32_t &dst, const Prim &p)
+inline void BlendRGBA(uint32_t &dst, uint32_t r, uint32_t g, uint32_t b, uint32_t a)
 {
-	if (p.a == 255)
+	if (a >= 255)
 	{
-		dst = 0xff000000u | (uint32_t(p.b) << 16) | (uint32_t(p.g) << 8) | p.r;
+		dst = 0xff000000u | (b << 16) | (g << 8) | r;
 		return;
 	}
-	const uint32_t a = p.a, ia = 255 - a;
+	if (a == 0) return;
+	const uint32_t ia = 255 - a;
 	const uint32_t dr = dst & 0xff, dg = (dst >> 8) & 0xff, db = (dst >> 16) & 0xff;
-	const uint32_t r = (p.r * a + dr * ia) / 255;
-	const uint32_t g = (p.g * a + dg * ia) / 255;
-	const uint32_t b = (p.b * a + db * ia) / 255;
-	dst = 0xff000000u | (b << 16) | (g << 8) | r;
+	dst = 0xff000000u | (((b * a + db * ia) / 255) << 16) | (((g * a + dg * ia) / 255) << 8) | ((r * a + dr * ia) / 255);
+}
+
+inline void Blend(uint32_t &dst, const Prim &p)
+{
+	BlendRGBA(dst, p.r, p.g, p.b, p.a);
+}
+
+// Shades one textured pixel the way the 2D shader does.
+inline void BlendTextured(uint32_t &dst, const Prim &p, float u, float v)
+{
+	const TexImage &t = *p.tex;
+	int tx = int(std::floor(u * t.w)), ty = int(std::floor(v * t.h));
+	if (p.wrap)
+	{
+		tx %= t.w; if (tx < 0) tx += t.w;
+		ty %= t.h; if (ty < 0) ty += t.h;
+	}
+	else
+	{
+		tx = std::clamp(tx, 0, t.w - 1);
+		ty = std::clamp(ty, 0, t.h - 1);
+	}
+	const uint32_t texel = t.px[size_t(ty) * t.w + tx];
+	uint32_t tr = texel & 0xff, tg = (texel >> 8) & 0xff, tb = (texel >> 16) & 0xff, ta = texel >> 24;
+
+	switch (p.mode)
+	{
+	case TM_STENCIL: tr = tg = tb = 255; break;
+	case TM_OPAQUE: ta = 255; break;
+	case TM_INVERSE: tr = 255 - tr; tg = 255 - tg; tb = 255 - tb; break;
+	case TM_INVERTOPAQUE: tr = 255 - tr; tg = 255 - tg; tb = 255 - tb; ta = 255; break;
+	case TM_ALPHATEXTURE: ta = tr; tr = tg = tb = 255; break;
+	default: break;
+	}
+	const uint32_t a = ta * p.a / 255;
+	if (a == 0) return;
+	const uint32_t r = std::min<uint32_t>(255, tr * p.r / 255 + p.or_);
+	const uint32_t g = std::min<uint32_t>(255, tg * p.g / 255 + p.og);
+	const uint32_t b = std::min<uint32_t>(255, tb * p.b / 255 + p.ob);
+	BlendRGBA(dst, r, g, b, a);
 }
 
 struct Target
@@ -141,13 +203,18 @@ void DrawTriangle(const Target &t, const Prim &p)
 	ClipBounds(t, p, l, tp, r, b);
 
 	float x0 = p.x[0], y0 = p.y[0], x1 = p.x[1], y1 = p.y[1], x2 = p.x[2], y2 = p.y[2];
+	float u0 = p.u[0], v0 = p.v[0], u1 = p.u[1], v1 = p.v[1], u2 = p.u[2], v2 = p.v[2];
 	float area = (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0);
 	if (area == 0.f || !std::isfinite(area)) return;
 	if (area < 0.f)
 	{
 		std::swap(x1, x2);
 		std::swap(y1, y2);
+		std::swap(u1, u2);
+		std::swap(v1, v2);
+		area = -area;
 	}
+	const float invArea = 1.f / area;
 
 	const int minx = std::max(l, int(std::floor(std::min({ x0, x1, x2 }))));
 	const int maxx = std::min(r - 1, int(std::ceil(std::max({ x0, x1, x2 }))));
@@ -182,7 +249,12 @@ void DrawTriangle(const Target &t, const Prim &p)
 			const float w1 = edge(x2, y2, x0, y0, px, py);
 			const float w2 = edge(x0, y0, x1, y1, px, py);
 			if ((w0 > 0 || (w0 == 0 && tl0)) && (w1 > 0 || (w1 == 0 && tl1)) && (w2 > 0 || (w2 == 0 && tl2)))
-				Blend(row[x], p);
+			{
+				if (p.tex == nullptr)
+					Blend(row[x], p);
+				else
+					BlendTextured(row[x], p, (w0 * u0 + w1 * u1 + w2 * u2) * invArea, (w0 * v0 + w1 * v1 + w2 * v2) * invArea);
+			}
 		}
 	}
 }
@@ -195,14 +267,14 @@ void DrawTriangle(const Target &t, const Prim &p)
 
 void WorkerMain()
 {
-	std::vector<Prim> prims;
+	Frame frame;
 	for (;;)
 	{
 		ANativeWindow *window;
 		{
 			std::unique_lock<std::mutex> lock(Lock);
 			Wake.wait(lock, [] { return HavePending && Window != nullptr; });
-			prims.swap(Pending);
+			std::swap(frame, Pending);
 			HavePending = false;
 			window = Window;
 			ANativeWindow_acquire(window);
@@ -217,7 +289,7 @@ void WorkerMain()
 				Target t = { static_cast<uint32_t *>(buffer.bits), buffer.stride, buffer.width, buffer.height };
 				for (int y = 0; y < t.h; y++)
 					std::fill_n(t.bits + y * t.stride, t.w, 0xff000000u);
-				for (const Prim &p : prims)
+				for (const Prim &p : frame.prims)
 				{
 					switch (p.type)
 					{
@@ -230,6 +302,7 @@ void WorkerMain()
 			ANativeWindow_unlockAndPost(window);
 		}
 		ANativeWindow_release(window);
+		frame.clear();
 
 		{
 			std::lock_guard<std::mutex> lock(Lock);
@@ -245,13 +318,56 @@ void WorkerMain()
 //
 //==========================================================================
 
-void Flatten(F2DDrawer &drawer, std::vector<Prim> &out)
+// Game-thread cache of converted textures, by texture and translation.
+std::unordered_map<uint64_t, std::shared_ptr<const TexImage>> TexCache;
+
+std::shared_ptr<const TexImage> GetTexImage(FGameTexture *gtex, FTranslationID translation)
+{
+	if (gtex == nullptr || !gtex->isValid()) return nullptr;
+	FTexture *tex = gtex->GetTexture();
+	if (tex == nullptr || tex->isHardwareCanvas()) return nullptr;
+
+	const int trans = translation.index();
+	const uint64_t key = (uint64_t(uintptr_t(tex)) << 20) ^ uint64_t(uint32_t(trans));
+	auto it = TexCache.find(key);
+	if (it != TexCache.end()) return it->second;
+
+	if (TexCache.size() > 2048) TexCache.clear(); // frames in flight keep their own references
+
+	auto img = std::make_shared<TexImage>();
+	FTextureBuffer buf = tex->CreateTexBuffer(trans, 0);
+	if (buf.mBuffer != nullptr && buf.mWidth > 0 && buf.mHeight > 0)
+	{
+		img->w = buf.mWidth;
+		img->h = buf.mHeight;
+		img->px.resize(size_t(img->w) * img->h);
+		const uint8_t *src = buf.mBuffer; // BGRA
+		for (size_t i = 0; i < img->px.size(); i++, src += 4)
+			img->px[i] = uint32_t(src[2]) | (uint32_t(src[1]) << 8) | (uint32_t(src[0]) << 16) | (uint32_t(src[3]) << 24);
+	}
+	std::shared_ptr<const TexImage> result = img->w > 0 ? img : nullptr;
+	TexCache[key] = result;
+	return result;
+}
+
+void Flatten(F2DDrawer &drawer, Frame &out)
 {
 	out.clear();
 	for (const auto &cmd : drawer.mData)
 	{
-		if (cmd.isSpecial != SpecialDrawCommand::NotSpecial || cmd.mTexture != nullptr || cmd.shape2DBufInfo != (DShape2DBufferInfo *)nullptr)
+		if (cmd.isSpecial != SpecialDrawCommand::NotSpecial || cmd.shape2DBufInfo != (DShape2DBufferInfo *)nullptr)
 			continue;
+
+		const TexImage *tex = nullptr;
+		if (cmd.mTexture != nullptr)
+		{
+			if (cmd.mType != F2DDrawer::DrawTypeTriangles) continue;
+			auto img = GetTexImage(cmd.mTexture, cmd.mTranslationId);
+			if (img == nullptr) continue;
+			tex = img.get();
+			if (out.textures.empty() || out.textures.back().get() != tex)
+				out.textures.push_back(std::move(img));
+		}
 
 		auto place = [&cmd](const F2DDrawer::TwoDVertex &v, float &x, float &y)
 		{
@@ -267,11 +383,15 @@ void Flatten(F2DDrawer &drawer, std::vector<Prim> &out)
 				y = v.y;
 			}
 		};
-		auto start = [&cmd](Prim &p, const F2DDrawer::TwoDVertex &v, Prim::Type type)
+		auto start = [&cmd, tex](Prim &p, const F2DDrawer::TwoDVertex &v, Prim::Type type)
 		{
 			p.type = type;
 			p.r = v.color0.r; p.g = v.color0.g; p.b = v.color0.b; p.a = v.color0.a;
+			p.or_ = cmd.mColor1.r; p.og = cmd.mColor1.g; p.ob = cmd.mColor1.b;
+			p.mode = uint8_t(cmd.mDrawMode);
 			p.scissor = (cmd.mFlags & F2DDrawer::DTF_Scissor) != 0;
+			p.wrap = (cmd.mFlags & F2DDrawer::DTF_Wrap) != 0;
+			p.tex = tex;
 			for (int i = 0; i < 4; i++) p.clip[i] = cmd.mScissor[i];
 		};
 
@@ -288,7 +408,7 @@ void Flatten(F2DDrawer &drawer, std::vector<Prim> &out)
 				if (p.a == 0) continue;
 				place(drawer.mVertices[vi], p.x[0], p.y[0]);
 				place(drawer.mVertices[vi + 1], p.x[1], p.y[1]);
-				out.push_back(p);
+				out.prims.push_back(p);
 			}
 			break;
 
@@ -301,7 +421,7 @@ void Flatten(F2DDrawer &drawer, std::vector<Prim> &out)
 				start(p, drawer.mVertices[vi], Prim::Point);
 				if (p.a == 0) continue;
 				place(drawer.mVertices[vi], p.x[0], p.y[0]);
-				out.push_back(p);
+				out.prims.push_back(p);
 			}
 			break;
 
@@ -318,7 +438,10 @@ void Flatten(F2DDrawer &drawer, std::vector<Prim> &out)
 				place(drawer.mVertices[a], p.x[0], p.y[0]);
 				place(drawer.mVertices[b], p.x[1], p.y[1]);
 				place(drawer.mVertices[c], p.x[2], p.y[2]);
-				out.push_back(p);
+				p.u[0] = drawer.mVertices[a].u; p.v[0] = drawer.mVertices[a].v;
+				p.u[1] = drawer.mVertices[b].u; p.v[1] = drawer.mVertices[b].v;
+				p.u[2] = drawer.mVertices[c].u; p.v[2] = drawer.mVertices[c].v;
+				out.prims.push_back(p);
 			}
 			break;
 
@@ -373,7 +496,7 @@ Java_io_github_morganhowe_uzdoomdroid_GameActivity_nativeSetSecondScreen(JNIEnv 
 void AndroidSecondScreen_Frame()
 {
 	static F2DDrawer drawer;
-	static std::vector<Prim> prims;
+	static Frame prims;
 	static uint64_t lastFrame = 0;
 	static bool lastBlank = false;
 	static unsigned lastGeneration = 0;
@@ -437,7 +560,7 @@ void AndroidSecondScreen_Frame()
 			lastBlank = false; // the surface changed meanwhile; redraw next frame
 			return;
 		}
-		Pending.swap(prims);
+		std::swap(Pending, prims);
 		HavePending = true;
 	}
 	Wake.notify_all();

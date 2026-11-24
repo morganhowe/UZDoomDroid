@@ -180,6 +180,13 @@ bool VulkanSwapChain::CreateSwapchain(int width, int height, int imageCount, boo
 	}
 
 	swapChainCreateInfo.preTransform = caps.Capabilites.currentTransform;
+#ifdef __ANDROID__
+	// The renderer doesn't rotate its output itself, so let Android rotate it.
+	// Otherwise, on screens whose natural orientation is portrait (e.g. AYN Thor),
+	// the game shows up turned 90 degrees.
+	if (caps.Capabilites.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+		swapChainCreateInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+#endif
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // If alpha channel is passed on to the DWM or not
 	swapChainCreateInfo.presentMode = presentMode;
 	swapChainCreateInfo.clipped = VK_TRUE; // Applications SHOULD set this value to VK_TRUE if they do not expect to read back the content of presentable images before presenting them or after reacquiring them, and if their fragment shaders do not have any side effects that require them to run for all pixels in the presentable image

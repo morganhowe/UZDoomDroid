@@ -543,10 +543,12 @@ static bool AndroidVulkanSurfaceSize(SystemBaseFrameBuffer *fb, int *width, int 
 		return false;
 
 	uint32_t w = caps.currentExtent.width, h = caps.currentExtent.height;
-	// Android reports the extent in the display's natural orientation.
-	const VkSurfaceTransformFlagsKHR rotated = VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR |
-		VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;
-	if (caps.currentTransform & rotated)
+	// Depending on the display's natural orientation, this can come back turned
+	// 90 degrees. The swapchain is presented without pre-rotation, so it must
+	// match the window's own orientation, which SDL knows.
+	int sw = 0, sh = 0;
+	SDL_GetWindowSize(Priv::window, &sw, &sh);
+	if (sw > 0 && sh > 0 && ((sw > sh) != (w > h)))
 		std::swap(w, h);
 
 	if (width) *width = (int)w;

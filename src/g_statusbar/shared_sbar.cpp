@@ -70,6 +70,7 @@ EXTERN_CVAR (Bool, am_showtime)
 EXTERN_CVAR (Bool, am_showtotaltime)
 #ifdef __ANDROID__
 EXTERN_CVAR (Bool, am_showbattery)
+extern bool AM_DrawingSecondary; // drawing the map info on a second display
 int I_GetBatteryLevel(bool *charging);
 #endif
 EXTERN_CVAR (Bool, am_showlevelname)
@@ -646,6 +647,11 @@ void DBaseStatusBar::DoDrawAutomapHUD(int crdefault, int highlight)
 
 	// Get the y coordinate for the first line of the map name text.
 	y = Scale(screenBottom - int(h), vheight, twod->GetHeight()) - fheight * numlines;
+#ifdef __ANDROID__
+	// On a second display there's no status bar: put the name at the bottom.
+	if (AM_DrawingSecondary)
+		y = vheight - fheight * numlines - textdist;
+#endif
 
 	// Draw the texts centered above the status bar.
 	for (unsigned i = 0; i < numlines; i++)

@@ -158,7 +158,7 @@ CVAR(Bool, am_showtotaltime, false, CVAR_ARCHIVE);
 CVAR(Bool, am_showbattery, true, CVAR_ARCHIVE);
 // Map on a second display (dual-screen handhelds), see android_secondscreen.cpp.
 CVAR(Bool, am_secondscreen, true, CVAR_ARCHIVE);
-CUSTOM_CVAR(Float, am_secondscreen_zoom, 2.f, CVAR_ARCHIVE)
+CUSTOM_CVAR(Float, am_secondscreen_zoom, 1.f, CVAR_ARCHIVE)
 {
 	if (self < 0.25f) self = 0.25f;
 	else if (self > 16.f) self = 16.f;
@@ -3628,6 +3628,8 @@ void DAutomap::DrawSecondary(int w, int h)
 //
 //=============================================================================
 
+bool AM_DrawingSecondary = false;
+
 bool AM_DrawSecondary(F2DDrawer *drawer, int w, int h)
 {
 	if (gamestate != GS_LEVEL || primaryLevel == nullptr || primaryLevel->automap == nullptr)
@@ -3653,9 +3655,17 @@ bool AM_DrawSecondary(F2DDrawer *drawer, int w, int h)
 	try
 	{
 		am->DrawSecondary(w, h);
+		// Kills, secrets, items, time and battery, as on the normal map screen.
+		if (StatusBar != nullptr)
+		{
+			AM_DrawingSecondary = true;
+			StatusBar->DoDrawAutomapHUD(CR_GREY, (gameinfo.gametype & GAME_DoomChex) ? CR_UNTRANSLATED : CR_YELLOW);
+			AM_DrawingSecondary = false;
+		}
 	}
 	catch (...)
 	{
+		AM_DrawingSecondary = false;
 		twod = savedDrawer;
 		automapactive = savedAutomap;
 		viewactive = savedView;
