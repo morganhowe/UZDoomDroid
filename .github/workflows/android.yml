@@ -78,8 +78,10 @@ jobs:
           APK=$(ls android/app/build/outputs/apk/release/*.apk | head -1)
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --print-certs "$APK" | tee signature.txt
-          DIGEST=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' signature.txt)
+          # "Signer #1 certificate SHA-256 digest: …" or "V2 Signer: certificate SHA-256 digest: …"
+          DIGEST=$(grep -m1 'certificate SHA-256 digest:' signature.txt | awk '{print $NF}')
           EXPECTED=$(tr -d ' \n' < android/signing-cert-sha256.txt)
+          if [ -z "$DIGEST" ]; then echo "::error::Could not read the APK signing certificate"; exit 1; fi
           echo "Signing certificate SHA-256: $DIGEST"
           if [ "${{ github.event_name }}" = "release" ] && [ "$DIGEST" != "$EXPECTED" ]; then
             echo "::error::APK is not signed with the release key ($EXPECTED)"
