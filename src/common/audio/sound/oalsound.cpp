@@ -625,6 +625,24 @@ static void LoadALCFunc(ALCdevice *device, const char *name, T *x)
 
 #define LOAD_FUNC(x)  (LoadALFunc(#x, &x))
 #define LOAD_DEV_FUNC(d, x)  (LoadALCFunc(d, #x, &x))
+#ifdef __ANDROID__
+#include <atomic>
+// Device that can be paused from Android's UI thread when the app goes to the
+// background (SDL blocks the game thread before the engine sees the event).
+// The function pointers are written before the device is published.
+static std::atomic<ALCdevice*> AndroidPausableDevice{nullptr};
+static void (ALC_APIENTRY *AndroidDevicePause)(ALCdevice *device);
+static void (ALC_APIENTRY *AndroidDeviceResume)(ALCdevice *device);
+
+void OpenAL_AndroidSetDevicePaused(bool paused)
+{
+	ALCdevice *dev = AndroidPausableDevice.load();
+	if (dev == nullptr) return;
+	if (paused) AndroidDevicePause(dev);
+	else AndroidDeviceResume(dev);
+}
+#endif
+
 OpenALSoundRenderer::OpenALSoundRenderer()
 	: QuitThread(false), Device(NULL), Context(NULL), SFXPaused(0), PrevEnvironment(NULL), EnvSlot(0)
 {
@@ -806,6 +824,14 @@ OpenALSoundRenderer::OpenALSoundRenderer()
 	}
 	FreeSfx = Sources;
 	DPrintf(DMSG_NOTIFY, "  Allocated " TEXTCOLOR_BLUE"%u" TEXTCOLOR_NORMAL" sources\n", Sources.Size());
+#ifdef __ANDROID__
+	if (ALC.SOFT_pause_device)
+	{
+		AndroidDevicePause = alcDevicePauseSOFT;
+		AndroidDeviceResume = alcDeviceResumeSOFT;
+		AndroidPausableDevice = Device;
+	}
+#endif
 
 	WasInWater = false;
 	if(*snd_efx && ALC.EXT_EFX)
@@ -961,6 +987,9 @@ OpenALSoundRenderer::~OpenALSoundRenderer()
 	alcMakeContextCurrent(NULL);
 	alcDestroyContext(Context);
 	Context = NULL;
+#ifdef __ANDROID__
+	AndroidPausableDevice = nullptr;
+#endif
 	alcCloseDevice(Device);
 	Device = NULL;
 }

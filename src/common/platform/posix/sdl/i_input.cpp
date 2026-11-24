@@ -44,6 +44,51 @@
 #include "v_video.h"
 #include "version.h"
 
+#ifdef __ANDROID__
+#include "gamestate.h"
+#include "i_time.h"
+#include "menu.h"
+#include "menustate.h"
+#include "name.h"
+
+void OpenAL_AndroidSetDevicePaused(bool paused);
+
+// SDL blocks the game thread as soon as Android pauses the app (screen off,
+// Home, app switcher), before the engine has handled the focus-loss event that
+// would pause the game and its sound. OpenAL keeps mixing on its own thread, so
+// stop the audio device right here, on the thread sending the event.
+static int SDLCALL Android_LifecycleWatch(void *, SDL_Event *ev)
+{
+	if (ev->type == SDL_APP_WILLENTERBACKGROUND)
+		OpenAL_AndroidSetDevicePaused(true);
+	return 1;
+}
+
+void I_AndroidInstallLifecycleWatch()
+{
+	SDL_AddEventWatch(Android_LifecycleWatch, nullptr);
+}
+
+// Opening the main menu pauses a single-player game.
+static void Android_PauseWithMenu()
+{
+	if (gamestate == GS_LEVEL && menuactive == MENU_Off)
+	{
+		M_StartControlPanel(true);
+		M_SetMenu(NAME_MainMenu, -1);
+	}
+}
+
+// Back in the foreground: resume audio, don't fast-forward through the time the
+// app was suspended, and show the main menu so play only continues when wanted.
+static void Android_ReturnToForeground()
+{
+	OpenAL_AndroidSetDevicePaused(false);
+	I_ResetFrameTime();
+	Android_PauseWithMenu();
+}
+#endif
+
 bool GUICapture;
 static bool NativeMouse = true;
 
@@ -645,6 +690,18 @@ void MessagePump (const SDL_Event &sev)
 		if(event.data1 != 0)
 			I_JoyConsumeEvent(sev.cbutton.which, &event);
 		break;
+
+#ifdef __ANDROID__
+	case SDL_APP_DIDENTERBACKGROUND:
+		// Normally SDL has already blocked this thread by now; this covers the
+		// case where it did not, so the game doesn't keep playing unseen.
+		Android_PauseWithMenu();
+		break;
+
+	case SDL_APP_DIDENTERFOREGROUND:
+		Android_ReturnToForeground();
+		break;
+#endif
 
 	case SDL_JOYDEVICEADDED:
 	case SDL_CONTROLLERDEVICEADDED:

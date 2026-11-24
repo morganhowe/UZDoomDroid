@@ -113,6 +113,7 @@ public class LauncherActivity extends Activity {
         super.onResume();
         hideSystemBars();
         refresh();
+        io.execute(() -> EngineData.scanUserFiles(this));
     }
 
     @Override

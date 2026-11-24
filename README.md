@@ -52,6 +52,9 @@ Test builds from every push are also available under
    (or copy files over USB to `Android/data/io.github.morganhowe.uzdoomdroid/files/wads/`).
 2. Pick the game, optionally tick some mods, and press **START**.
 
+Saves, screenshots and settings are in `Android/data/io.github.morganhowe.uzdoomdroid/files/` (`savegames/`,
+`screenshots/`, `config/uzdoom/`), so you can back them up over USB.
+
 Full controller maps, file locations, build instructions and known limitations are in
 **[android/README.md](android/README.md)**.
 

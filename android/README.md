@@ -78,8 +78,22 @@ alphabetical order.
 Advanced: put extra command-line arguments in `Android/data/io.github.morganhowe.uzdoomdroid/files/args.txt`
 (for example `+map MAP01` or `-warp 1 1`). Lines starting with `#` are ignored.
 
-Saves, `uzdoom.ini`, and screenshots are kept in `Android/data/io.github.morganhowe.uzdoomdroid/files/`, so you can
-back them up over USB.
+Everything the game writes is in `Android/data/io.github.morganhowe.uzdoomdroid/files/`, so you can back it up over USB:
+
+| Folder | Contents |
+|---|---|
+| `wads/` | Games and mods |
+| `savegames/` | Saved games |
+| `screenshots/` | Screenshots |
+| `config/uzdoom/` | `uzdoom.ini` (all settings and controls) |
+
+Versions 0.0.1 and 0.0.2 kept saves and settings in hidden folders (`.local/share/games/uzdoom/` and
+`.config/uzdoom/`) that Android doesn't show over USB. Later versions move them to the folders above automatically
+when the game starts. If a PC doesn't show newly saved files right away, go back to the launcher once (it asks
+Android to index them) or reconnect the USB cable.
+
+**Pausing:** turning the screen off, pressing Home or switching apps pauses the game and its sound. When you come
+back, the main menu is open. Press B to carry on.
 
 ## Controls
 

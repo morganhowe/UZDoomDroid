@@ -186,7 +186,12 @@ FString M_GetConfigPath(bool for_reading)
 
 FString M_GetDocumentsPath()
 {
-#ifdef __HAIKU__
+#if defined(__ANDROID__)
+	// Saves and screenshots go straight into the app's data folder, where they
+	// are visible over USB (see Android_SetupPaths in i_main.cpp).
+	const char *home = getenv("HOME");
+	return NicePath(home ? home : ".") + "/";
+#elif defined(__HAIKU__)
 	return FStringf("%s/" GAMENAMELOWERCASE "/", GetConfigPath());
 #else
 	return M_GetAppDataPath(false) + "/";

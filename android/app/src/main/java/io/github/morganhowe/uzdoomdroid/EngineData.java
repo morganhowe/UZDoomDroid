@@ -5,12 +5,15 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.media.MediaScannerConnection;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Engine files (uzdoom.pk3, soundfonts, FM banks) ship as APK assets under
@@ -39,6 +42,33 @@ final class EngineData {
         //noinspection ResultOfMethodCallIgnored
         dir.mkdirs();
         return dir;
+    }
+
+    /**
+     * Ask Android to index the files the game wrote (saves, screenshots, settings),
+     * so they show up when the device is browsed over USB without a reboot.
+     */
+    static void scanUserFiles(Context ctx) {
+        List<String> paths = new ArrayList<>();
+        File root = userDir(ctx);
+        for (String sub : new String[] { "savegames", "screenshots", "config" }) {
+            collect(new File(root, sub), paths, 4);
+        }
+        if (!paths.isEmpty()) {
+            MediaScannerConnection.scanFile(ctx.getApplicationContext(), paths.toArray(new String[0]), null, null);
+        }
+    }
+
+    private static void collect(File f, List<String> out, int depth) {
+        File[] kids = f.listFiles();
+        if (kids == null) return;
+        for (File k : kids) {
+            if (k.isDirectory()) {
+                if (depth > 0) collect(k, out, depth - 1);
+            } else {
+                out.add(k.getAbsolutePath());
+            }
+        }
     }
 
     static boolean isCurrent(Context ctx) {

@@ -129,9 +129,24 @@ static void Android_RedirectOutput()
 		pthread_detach(thread);
 }
 
+// Move a file or folder from an old location unless the new one already exists.
+static void Android_Migrate(const FString &from, const FString &to)
+{
+	struct stat st;
+	if (stat(from.GetChars(), &st) != 0 || stat(to.GetChars(), &st) == 0) return;
+	if (rename(from.GetChars(), to.GetChars()) == 0)
+		fprintf(stderr, "Moved %s to %s\n", from.GetChars(), to.GetChars());
+}
+
 // Engine data (uzdoom.pk3, soundfonts, ...) is extracted by the launcher into
-// <internal storage>/engine/. User data (config, saves, screenshots) lives in
-// the app's external files directory, which is reachable over USB/MTP.
+// <internal storage>/engine/. User data lives in the app's external files
+// directory, which is reachable over USB/MTP:
+//   wads/          games and mods
+//   savegames/     saved games
+//   screenshots/   screenshots
+//   config/        uzdoom.ini and other settings
+// Android does not show folders whose names start with a dot over USB, so
+// none of these may be hidden.
 static void Android_SetupPaths()
 {
 	const char *internal = SDL_AndroidGetInternalStoragePath();
@@ -139,17 +154,25 @@ static void Android_SetupPaths()
 	if (external == nullptr) external = internal;
 
 	FString home = external ? external : ".";
+	FString internalDir = internal ? internal : home.GetChars();
 	FString wads = home + "/wads";
 	mkdir(wads.GetChars(), 0755);
+	mkdir((home + "/config").GetChars(), 0755);
+
+	// Builds up to 0.0.2 used the desktop Linux layout, in hidden folders.
+	Android_Migrate(home + "/.config/" GAMENAMELOWERCASE, home + "/config/" GAMENAMELOWERCASE);
+	Android_Migrate(home + "/.local/share/games/" GAMENAMELOWERCASE "/savegames", home + "/savegames");
+	Android_Migrate(home + "/.local/share/games/" GAMENAMELOWERCASE "/screenshots", home + "/screenshots");
 
 	setenv("HOME", home.GetChars(), 1);
-	setenv("XDG_CONFIG_HOME", (home + "/.config").GetChars(), 1);
-	setenv("XDG_DATA_HOME", (home + "/.local/share").GetChars(), 1);
+	setenv("XDG_CONFIG_HOME", (home + "/config").GetChars(), 1);
+	setenv("XDG_DATA_HOME", (home + "/config/data").GetChars(), 1);
+	setenv("XDG_CACHE_HOME", (internalDir + "/cache").GetChars(), 1);
 	setenv("DOOMWADDIR", wads.GetChars(), 1);
 	if (chdir(home.GetChars()) != 0)
 		fprintf(stderr, "Could not change directory to %s\n", home.GetChars());
 
-	progdir = FString(internal ? internal : ".") + "/engine/";
+	progdir = internalDir + "/engine/";
 }
 
 // Ask the Java side to start the game again once this process has exited.
@@ -304,6 +327,10 @@ int main (int argc, char **argv)
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
 	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+#endif
+#ifdef __ANDROID__
+	void I_AndroidInstallLifecycleWatch();
+	I_AndroidInstallLifecycleWatch();
 #endif
 	if (SDL_Init (0) < 0)
 	{
