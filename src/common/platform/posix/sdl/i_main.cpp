@@ -327,6 +327,10 @@ int main (int argc, char **argv)
 	SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");
 	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
 	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "0");
+	// SDL otherwise lists the phone's accelerometer as a 3-axis joystick. Its
+	// axes go through UZDoom's generic-joystick menu navigation, so holding the
+	// device at an angle scrolled menus by itself.
+	SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
 #endif
 #ifdef __ANDROID__
 	void I_AndroidInstallLifecycleWatch();
