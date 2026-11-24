@@ -53,6 +53,12 @@ public class LicensesActivity extends Activity {
         add("OpenAL Soft (LGPL)", ROOT + "/openal-soft.txt");
         add("OpenAL Soft: PFFFT", ROOT + "/openal-soft-pffft.txt");
         add("GCEM (Apache 2.0)", ROOT + "/gcem.txt");
+        add("libsndfile (LGPL)", ROOT + "/libsndfile.txt");
+        add("mpg123 (LGPL)", ROOT + "/mpg123.txt");
+        add("libFLAC (BSD)", ROOT + "/libflac.txt");
+        add("libogg (BSD)", ROOT + "/libogg.txt");
+        add("libvorbis (BSD)", ROOT + "/libvorbis.txt");
+        add("Opus (BSD)", ROOT + "/opus.txt");
         addDir("UZDoom component: ", ROOT + "/uzdoom", Arrays.asList("README.TXT", "gpl.txt", "lgpl.txt"));
         addDir("FM instrument bank: ", ROOT + "/fm_banks", new ArrayList<>());
 

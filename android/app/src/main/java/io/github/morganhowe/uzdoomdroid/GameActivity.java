@@ -27,7 +27,10 @@ public class GameActivity extends SDLActivity {
     protected String[] getLibraries() {
         return new String[] {
             "SDL2",
-            "openal", // dlopen()ed by the engine; preloading keeps the lookup trivial
+            // dlopen()ed by the engine/ZMusic; preloading keeps the lookup trivial
+            "openal",
+            "sndfile",
+            "mpg123",
             "main",
         };
     }

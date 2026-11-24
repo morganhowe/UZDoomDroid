@@ -81,7 +81,8 @@ android {
 def fetchDeps = tasks.register('fetchDeps', Exec) {
     description = 'Clones SDL2 and OpenAL Soft into android/deps'
     commandLine 'sh', rootProject.file('fetch-deps.sh').absolutePath
-    onlyIf { !new File(depsDir, 'SDL/CMakeLists.txt').exists() || !new File(depsDir, 'openal-soft/CMakeLists.txt').exists() }
+    onlyIf { ['SDL/CMakeLists.txt', 'openal-soft/CMakeLists.txt', 'libsndfile/CMakeLists.txt',
+              'mpg123/ports/cmake/CMakeLists.txt', 'gcem/include/gcem.hpp'].any { !new File(depsDir, it).exists() } }
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +167,14 @@ abstract class CollectEngineData extends DefaultTask {
         project.copy { from(new File(deps, 'openal-soft/COPYING')); into dst; rename { 'openal-soft.txt' } }
         project.copy { from(new File(deps, 'openal-soft/LICENSE-pffft')); into dst; rename { 'openal-soft-pffft.txt' } }
         project.copy { from(new File(deps, 'gcem/LICENSE')); into dst; rename { 'gcem.txt' } }
-        ['uzdoom-license.txt', 'sdl2.txt', 'openal-soft.txt', 'gcem.txt', 'content-game-support.md'].each {
+        project.copy { from(new File(deps, 'libsndfile/COPYING')); into dst; rename { 'libsndfile.txt' } }
+        project.copy { from(new File(deps, 'mpg123/COPYING')); into dst; rename { 'mpg123.txt' } }
+        project.copy { from(new File(deps, 'ogg/COPYING')); into dst; rename { 'libogg.txt' } }
+        project.copy { from(new File(deps, 'vorbis/COPYING')); into dst; rename { 'libvorbis.txt' } }
+        project.copy { from(new File(deps, 'flac/COPYING.Xiph')); into dst; rename { 'libflac.txt' } }
+        project.copy { from(new File(deps, 'opus/COPYING')); into dst; rename { 'opus.txt' } }
+        ['uzdoom-license.txt', 'sdl2.txt', 'openal-soft.txt', 'gcem.txt', 'content-game-support.md',
+         'libsndfile.txt', 'mpg123.txt', 'libogg.txt', 'libvorbis.txt', 'libflac.txt', 'opus.txt'].each {
             if (!new File(dst, it).isFile()) throw new GradleException("License file ${it} is missing")
         }
     }
@@ -182,7 +190,10 @@ androidComponents {
             t.depsDir.set(depsDir)
             t.licenseInputs.from(new File(repoRoot, 'docs/licenses'), new File(repoRoot, 'LICENSE'),
                                new File(depsDir, 'SDL/LICENSE.txt'), new File(depsDir, 'openal-soft/COPYING'),
-                               new File(depsDir, 'gcem/LICENSE'))
+                               new File(depsDir, 'gcem/LICENSE'), new File(depsDir, 'libsndfile/COPYING'),
+                               new File(depsDir, 'mpg123/COPYING'), new File(depsDir, 'ogg/COPYING'),
+                               new File(depsDir, 'vorbis/COPYING'), new File(depsDir, 'flac/COPYING.Xiph'),
+                               new File(depsDir, 'opus/COPYING'))
         }
         variant.sources.assets?.addGeneratedSourceDirectory(collect, { it.outputDir })
     }

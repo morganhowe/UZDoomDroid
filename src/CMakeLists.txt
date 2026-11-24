@@ -1410,8 +1410,9 @@ set_target_properties( zdoom PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ZDOOM_OUTPUT_
 if( ANDROID )
 	set_target_properties( zdoom PROPERTIES OUTPUT_NAME main )
 	target_link_libraries( zdoom log android )
-	# libopenal.so is dlopen()ed, so nothing links it; build it anyway so it gets packaged.
-	add_dependencies( zdoom OpenAL )
+	# libopenal.so, libsndfile.so and libmpg123.so are dlopen()ed, so nothing links
+	# them; build them anyway so they get packaged.
+	add_dependencies( zdoom OpenAL UZDOOM_AUDIO_LIBS )
 else()
 	set_target_properties( zdoom PROPERTIES OUTPUT_NAME ${ZDOOM_EXE_NAME} )
 endif()

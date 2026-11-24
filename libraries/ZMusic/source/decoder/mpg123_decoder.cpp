@@ -47,6 +47,8 @@ FModule MPG123Module{"MPG123"};
 #define MPG123LIB "libmpg123-0.dll"
 #elif defined(__APPLE__)
 #define MPG123LIB "libmpg123.0.dylib"
+#elif defined(__ANDROID__)
+#define MPG123LIB "libmpg123.so" // Android packages libraries without version suffixes
 #else
 #define MPG123LIB "libmpg123.so.0"
 #endif

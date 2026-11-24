@@ -138,9 +138,9 @@ and the full license text for every bundled component. Gradle copies these texts
   by enabling it, but it hasn't been tested on Android.
 * **Video cutscenes:** VP8/VP9 (`.ivf`) movies are disabled because libvpx isn't built for Android.
   Other movie formats (ANM, MVE, Smacker) still play.
-* **Music and sound:** MIDI (FluidSynth, OPL, OPN, Timidity, WildMidi), tracker and
-  game-music-emu formats work. OGG/FLAC/MP3 *streams* need libsndfile and libmpg123,
-  which aren't built yet. Doom-format sounds and WAV are unaffected.
+* **Music and sound:** everything plays: MIDI (FluidSynth, OPL, OPN, Timidity, WildMidi), tracker and
+  game-music-emu formats, plus WAV/FLAC/Ogg Vorbis/Opus (via `libsndfile.so`) and MP3 (via `libmpg123.so`),
+  both built from source by `cmake/AndroidAudio.cmake`.
 * Each game session runs in its own process (`:game`). Quitting the game returns to the launcher.
   Choosing "Restart" in the error dialog, or using the restart command, relaunches with the
   same files.

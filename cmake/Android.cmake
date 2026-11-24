@@ -11,7 +11,8 @@ if( NOT UZDOOM_ANDROID_DEPS )
 endif()
 set( UZDOOM_ANDROID_DEPS "${UZDOOM_ANDROID_DEPS}" CACHE PATH "Third-party sources for the Android build" )
 
-if( NOT EXISTS "${UZDOOM_ANDROID_DEPS}/SDL/CMakeLists.txt" OR NOT EXISTS "${UZDOOM_ANDROID_DEPS}/openal-soft/CMakeLists.txt" )
+if( NOT EXISTS "${UZDOOM_ANDROID_DEPS}/SDL/CMakeLists.txt" OR NOT EXISTS "${UZDOOM_ANDROID_DEPS}/openal-soft/CMakeLists.txt"
+	OR NOT EXISTS "${UZDOOM_ANDROID_DEPS}/libsndfile/CMakeLists.txt" OR NOT EXISTS "${UZDOOM_ANDROID_DEPS}/mpg123/ports/cmake/CMakeLists.txt" )
 	message( FATAL_ERROR "Android dependencies missing in ${UZDOOM_ANDROID_DEPS}. Run android/fetch-deps.sh first." )
 endif()
 
@@ -69,3 +70,8 @@ set( ALSOFT_EMBED_HRTF_DATA ON CACHE BOOL "" FORCE )
 set( ALSOFT_BACKEND_OBOE OFF CACHE BOOL "" FORCE )
 set( ALSOFT_REQUIRE_OPENSL ON CACHE BOOL "" FORCE ) # fail loudly instead of shipping a silent build
 add_subdirectory( "${UZDOOM_ANDROID_DEPS}/openal-soft" "${CMAKE_BINARY_DIR}/deps/openal-soft" EXCLUDE_FROM_ALL )
+
+# ---------------------------------------------------------------------------
+# libsndfile (FLAC/Ogg/Opus/WAV) and libmpg123 (MP3), dlopen()ed by ZMusic
+# ---------------------------------------------------------------------------
+include( "${CMAKE_CURRENT_LIST_DIR}/AndroidAudio.cmake" )

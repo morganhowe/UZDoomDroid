@@ -61,10 +61,13 @@ Everything that makes this an Android port:
 
 - `android/`: Gradle project, the controller-driven launcher, the game activity, the host-tools build, the dependency fetch script
 - `cmake/Android.cmake`: the Android build setup (SDL2, OpenAL Soft, platform defaults)
+- `cmake/AndroidAudio.cmake`: builds libsndfile (with FLAC, Ogg, Vorbis, Opus) and mpg123 for sound effects and music
 - `.github/workflows/android.yml`: the APK build
 - Android-only changes, marked `__ANDROID__` or `ANDROID`, in:
   `CMakeLists.txt`, `src/CMakeLists.txt`, `libraries/ZWidget/CMakeLists.txt`,
-  `src/common/platform/posix/sdl/{i_main,i_system,i_input,sdlglvideo}.cpp`, `src/common/audio/sound/oalsound.cpp`
+  `src/common/platform/posix/sdl/{i_main,i_system,i_input,sdlglvideo}.cpp`, `src/common/audio/sound/oalsound.cpp`,
+  `src/common/rendering/v_video.cpp` (menu text scale), `src/d_main.cpp` (jump/freelook defaults),
+  `libraries/ZMusic/source/decoder/{sndfile,mpg123}_decoder.cpp` (library names)
 - Changes that make libvpx optional (it's guarded by `USE_LIBVPX`) in `src/common/cutscenes/movieplayer.cpp` and `src/common/textures/animtexture.cpp`
 
 To see every change, [compare this fork against upstream UZDoom](https://github.com/UZDoom/UZDoom/compare/trunk...morganhowe:UZDoomDroid:android-port).
@@ -83,7 +86,8 @@ The app shows the same notice, the source link and every bundled license under *
 
 Same as UZDoom: **GPLv3 or later**. See the legal section of the original README below and the [licenses](docs/licenses) folder.
 Third-party libraries fetched at build time keep their own licenses: SDL2 (zlib), OpenAL Soft (GNU LGPL; shipped as a
-separate `libopenal.so`), and GCEM (Apache 2.0).
+separate `libopenal.so`), GCEM (Apache 2.0), libsndfile and mpg123 (GNU LGPL; shipped as separate
+`libsndfile.so` and `libmpg123.so`), and libogg, libvorbis, libFLAC and Opus (BSD-style).
 
 The game-content packs (`brightmaps.pk3`, `game_support.pk3`, `game_widescreen_gfx.pk3`) are based on original game
 content. They may be shared for free but **may not be sold**, so don't charge for this app or bundle it with anything paid.

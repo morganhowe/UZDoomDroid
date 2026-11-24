@@ -46,6 +46,8 @@ FModule SndFileModule{"SndFile"};
 static const char* const libnames[] = { "sndfile.dll", "libsndfile-1.dll" };
 #elif defined(__APPLE__)
 static const char* const libnames[] = { "libsndfile.1.dylib" };
+#elif defined(__ANDROID__)
+static const char* const libnames[] = { "libsndfile.so" }; // Android packages libraries without version suffixes
 #else
 static const char* const libnames[] = { "libsndfile.so.1" };
 #endif
