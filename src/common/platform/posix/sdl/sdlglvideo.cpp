@@ -726,7 +726,8 @@ static bool AndroidEGLSurfaceSize(int *width, int *height)
 {
 	EGLDisplay display = eglGetCurrentDisplay();
 	EGLSurface surface = eglGetCurrentSurface(EGL_DRAW);
-	if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE)
+	// (The bundled eglplatform.h lacks EGL_CAST, so EGL_NO_DISPLAY/EGL_NO_SURFACE don't compile.)
+	if (display == nullptr || surface == nullptr)
 		return false;
 	EGLint w = 0, h = 0;
 	if (!eglQuerySurface(display, surface, EGL_WIDTH, &w) || !eglQuerySurface(display, surface, EGL_HEIGHT, &h) || w <= 0 || h <= 0)
