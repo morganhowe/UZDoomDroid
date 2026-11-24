@@ -148,6 +148,10 @@ On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B s
 
 Jumping and freelook are **off by default**, like the original games. To use them, set *Options → Gameplay Options →
 Allow jump / Allow freelook* to On or Default. This resets each time the game starts.
+
+The game renders at your screen's full resolution, with sharp, unfiltered pixels. For smoother (filtered)
+textures, change *Options → Display Options → Texture Options → Texture Filter mode*; for a lower rendering
+resolution (faster on weak phones), change *Display Options → Video Mode → Resolution scale*.
 Menu text is sized for small screens on Android. Change it in *HUD Options → Scaling Options → Menu text scale*.
 Menus are navigated with the D-pad. Use A to confirm and B to go back. Naming a save shows
 UZDoom's on-screen character grid, so no keyboard is needed.

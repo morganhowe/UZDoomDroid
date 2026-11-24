@@ -129,7 +129,13 @@ CUSTOM_CVARD(Float, gl_texture_filter_anisotropic, 16.f, CVAR_ARCHIVE | CVAR_GLO
 	screen->SetTextureFilterMode();
 }
 
-CUSTOM_CVARD(Int, gl_texture_filter, 6, CVAR_ARCHIVE|CVAR_GLOBALCONFIG|CVAR_NOINITCALL, "changes the texture filtering settings")
+#ifdef __ANDROID__
+// Android port: sharp, unfiltered pixels by default.
+#define GL_TEXTURE_FILTER_DEFAULT 0
+#else
+#define GL_TEXTURE_FILTER_DEFAULT 6
+#endif
+CUSTOM_CVARD(Int, gl_texture_filter, GL_TEXTURE_FILTER_DEFAULT, CVAR_ARCHIVE|CVAR_GLOBALCONFIG|CVAR_NOINITCALL, "changes the texture filtering settings")
 {
 	if (self < 0 || self > 6) self=6;
 	screen->SetTextureFilterMode();

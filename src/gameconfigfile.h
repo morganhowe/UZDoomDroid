@@ -63,6 +63,7 @@ private:
 	int bResetBindFlags;
 
 	double EngineLastRunVer;
+	int AndroidSettingsVer = 0;
 	double GameLastRunVer;
 };
 

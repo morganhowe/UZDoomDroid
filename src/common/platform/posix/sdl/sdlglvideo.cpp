@@ -28,6 +28,9 @@
 
 #ifdef HAVE_VULKAN
 #include <SDL2/SDL_vulkan.h>
+#ifdef __ANDROID__
+#include <EGL/egl.h>
+#endif
 #include <zvulkan/vulkanbuilders.h>
 #include <zvulkan/vulkandevice.h>
 #include <zvulkan/vulkaninstance.h>
@@ -147,11 +150,17 @@ namespace Priv
 		// TODO control better when updateDisplayInfo fails
 		SDL_Rect* bounds = &displayBounds[vid_adapter % numberOfDisplays];
 
+#ifdef __ANDROID__
+		// Always the whole screen, at the screen's own resolution.
+		win_w = bounds->w;
+		win_h = bounds->h;
+#else
 		if (win_w <= 0 || win_h <= 0)
 		{
 			win_w = bounds->w * 8 / 10;
 			win_h = bounds->h * 8 / 10;
 		}
+#endif
 
 		int xWindowPos = (win_x <= 0) ? SDL_WINDOWPOS_CENTERED_DISPLAY(vid_adapter) : win_x;
 		int yWindowPos = (win_y <= 0) ? SDL_WINDOWPOS_CENTERED_DISPLAY(vid_adapter) : win_y;
@@ -517,6 +526,35 @@ SystemBaseFrameBuffer::SystemBaseFrameBuffer (void *, bool fullscreen)
 {
 }
 
+#if defined(HAVE_VULKAN) && defined(__ANDROID__)
+// SDL's idea of the window size can be smaller than the real Android surface.
+// A swapchain made at that size gets stretched by the system compositor, which
+// looks blurry and low resolution, so ask Vulkan for the surface's real size.
+static bool AndroidVulkanSurfaceSize(SystemBaseFrameBuffer *fb, int *width, int *height)
+{
+	auto vkfb = dynamic_cast<VulkanRenderDevice *>(fb);
+	if (vkfb == nullptr || !vkfb->device || !vkfb->device->Surface || vkfb->device->Surface->Surface == VK_NULL_HANDLE)
+		return false;
+
+	VkSurfaceCapabilitiesKHR caps = {};
+	if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkfb->device->PhysicalDevice.Device, vkfb->device->Surface->Surface, &caps) != VK_SUCCESS)
+		return false;
+	if (caps.currentExtent.width == 0 || caps.currentExtent.height == 0 || caps.currentExtent.width == 0xFFFFFFFF)
+		return false;
+
+	uint32_t w = caps.currentExtent.width, h = caps.currentExtent.height;
+	// Android reports the extent in the display's natural orientation.
+	const VkSurfaceTransformFlagsKHR rotated = VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR |
+		VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR | VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR;
+	if (caps.currentTransform & rotated)
+		std::swap(w, h);
+
+	if (width) *width = (int)w;
+	if (height) *height = (int)h;
+	return true;
+}
+#endif
+
 int SystemBaseFrameBuffer::GetClientWidth()
 {
 	int width = 0;
@@ -524,6 +562,10 @@ int SystemBaseFrameBuffer::GetClientWidth()
 
 #ifdef HAVE_VULKAN
 	assert(Priv::vulkanEnabled);
+#ifdef __ANDROID__
+	if (AndroidVulkanSurfaceSize(this, &width, nullptr))
+		return width;
+#endif
 	SDL_Vulkan_GetDrawableSize(Priv::window, &width, nullptr);
 #endif
 
@@ -536,6 +578,10 @@ int SystemBaseFrameBuffer::GetClientHeight()
 
 #ifdef HAVE_VULKAN
 	assert(Priv::vulkanEnabled);
+#ifdef __ANDROID__
+	if (AndroidVulkanSurfaceSize(this, nullptr, &height))
+		return height;
+#endif
 	SDL_Vulkan_GetDrawableSize(Priv::window, nullptr, &height);
 #endif
 
@@ -674,9 +720,30 @@ SystemGLFrameBuffer::~SystemGLFrameBuffer ()
 	}
 }
 
+#ifdef __ANDROID__
+// The real size of the GLES surface, in case SDL's window size is smaller.
+static bool AndroidEGLSurfaceSize(int *width, int *height)
+{
+	EGLDisplay display = eglGetCurrentDisplay();
+	EGLSurface surface = eglGetCurrentSurface(EGL_DRAW);
+	if (display == EGL_NO_DISPLAY || surface == EGL_NO_SURFACE)
+		return false;
+	EGLint w = 0, h = 0;
+	if (!eglQuerySurface(display, surface, EGL_WIDTH, &w) || !eglQuerySurface(display, surface, EGL_HEIGHT, &h) || w <= 0 || h <= 0)
+		return false;
+	if (width) *width = w;
+	if (height) *height = h;
+	return true;
+}
+#endif
+
 int SystemGLFrameBuffer::GetClientWidth()
 {
 	int width = 0;
+#ifdef __ANDROID__
+	if (AndroidEGLSurfaceSize(&width, nullptr))
+		return width;
+#endif
 	SDL_GL_GetDrawableSize(Priv::window, &width, nullptr);
 	return width;
 }
@@ -684,6 +751,10 @@ int SystemGLFrameBuffer::GetClientWidth()
 int SystemGLFrameBuffer::GetClientHeight()
 {
 	int height = 0;
+#ifdef __ANDROID__
+	if (AndroidEGLSurfaceSize(nullptr, &height))
+		return height;
+#endif
 	SDL_GL_GetDrawableSize(Priv::window, nullptr, &height);
 	return height;
 }

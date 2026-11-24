@@ -196,6 +196,7 @@ FGameConfigFile::FGameConfigFile ()
 	// already present
 	GameLastRunVer = 0;
 	EngineLastRunVer = 0;
+	AndroidSettingsVer = 0;
 	if (SetSection ("LastRun"))
 	{
 		const char *lastver = GetValueForKey ("Version");
@@ -203,6 +204,10 @@ FGameConfigFile::FGameConfigFile ()
 		{
 			EngineLastRunVer = atof(lastver);
 		}
+#ifdef __ANDROID__
+		const char *androidver = GetValueForKey ("AndroidSettings");
+		if (androidver != NULL) AndroidSettingsVer = atoi(androidver);
+#endif
 	}
 
 	if (EngineLastRunVer < 227)
@@ -765,6 +770,22 @@ void FGameConfigFile::DoGlobalSetup ()
 		}
 	}
 
+#ifdef __ANDROID__
+	// Android port defaults that existing installs should pick up too.
+	if (AndroidSettingsVer < 1)
+	{
+		// Sharp, unfiltered pixels instead of the smoothed default.
+		FBaseCVar *filter = FindCVar("gl_texture_filter", NULL);
+		if (filter != NULL) filter->ResetToDefault();
+		// Render at the screen's own resolution.
+		for (const char *name : { "vid_scalemode", "vid_scalefactor" })
+		{
+			FBaseCVar *scale = FindCVar(name, NULL);
+			if (scale != NULL) scale->ResetToDefault();
+		}
+	}
+#endif
+
 	OkayToWrite = true;
 
 	if(QueueWrite)
@@ -1040,6 +1061,9 @@ void FGameConfigFile::ArchiveGlobalData ()
 	ClearCurrentSection ();
 	SetValueForKey ("Version", ENGINELASTRUNVERSION);
 	SetValueForKey ("Release", VERSIONSTR);
+#ifdef __ANDROID__
+	SetValueForKey ("AndroidSettings", "1");
+#endif
 
 	SetSection ("GlobalSettings", true);
 	ClearCurrentSection ();
