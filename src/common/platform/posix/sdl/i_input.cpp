@@ -56,6 +56,54 @@ void OpenAL_AndroidSetDevicePaused(bool paused);
 void I_AndroidRequestVulkanSurfaceReset();
 #endif
 
+#include <jni.h>
+#include "printf.h"
+
+// Extra controller buttons (the additional shoulder/back buttons on handhelds such
+// as Retroid devices, and the generic BUTTON_1..16 keys). SDL's Android backend
+// drops these for anything it treats as a game controller, so GameActivity grabs
+// them first and hands them over here; they become bindable JoyN keys.
+static Uint32 Android_ExtraButtonEventType()
+{
+	static Uint32 type = SDL_RegisterEvents(1);
+	return type;
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_io_github_morganhowe_uzdoomdroid_GameActivity_nativeExtraButton(JNIEnv *, jclass, jint joybutton, jint keycode, jboolean down)
+{
+	const Uint32 type = Android_ExtraButtonEventType();
+	if (type == (Uint32)-1 || joybutton < 1 || joybutton > KEY_LASTJOYBUTTON - KEY_FIRSTJOYBUTTON + 1)
+		return;
+	SDL_Event sev = {};
+	sev.type = type;
+	sev.user.code = down ? 1 : 0;
+	sev.user.data1 = (void *)(intptr_t)joybutton;
+	sev.user.data2 = (void *)(intptr_t)keycode;
+	SDL_PushEvent(&sev);
+}
+
+static bool Android_HandleExtraButton(const SDL_Event &sev)
+{
+	if (sev.type != Android_ExtraButtonEventType())
+		return false;
+
+	const int joybutton = (int)(intptr_t)sev.user.data1;
+	const int keycode = (int)(intptr_t)sev.user.data2;
+	static bool announced[KEY_LASTJOYBUTTON - KEY_FIRSTJOYBUTTON + 1];
+	if (sev.user.code && !announced[joybutton - 1])
+	{
+		announced[joybutton - 1] = true;
+		Printf("Extra controller button (Android keycode %d) can be bound as Joy%d\n", keycode, joybutton);
+	}
+
+	event_t event = {};
+	event.type = sev.user.code ? EV_KeyDown : EV_KeyUp;
+	event.data1 = KEY_FIRSTJOYBUTTON + joybutton - 1;
+	D_PostEvent(&event);
+	return true;
+}
+
 // SDL blocks the game thread as soon as Android pauses the app (screen off,
 // Home, app switcher), before the engine has handled the focus-loss event that
 // would pause the game and its sound. OpenAL keeps mixing on its own thread, so
@@ -752,6 +800,10 @@ void I_GetEvent ()
 			sev.key.keysym.scancode = SDL_SCANCODE_ESCAPE;
 			sev.key.keysym.sym = SDLK_ESCAPE;
 		}
+#endif
+#ifdef __ANDROID__
+		if (Android_HandleExtraButton(sev))
+			continue;
 #endif
 		MessagePump (sev);
 	}

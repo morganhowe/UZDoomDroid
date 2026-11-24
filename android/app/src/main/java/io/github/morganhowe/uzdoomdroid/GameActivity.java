@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -116,6 +117,63 @@ public class GameActivity extends SDLActivity {
             return true;
         }
         return handled;
+    }
+
+    private static native void nativeExtraButton(int joyButton, int keyCode, boolean down);
+
+    /**
+     * Engine JoyN number for a controller button that SDL doesn't pass on for game
+     * controllers (extra shoulder/back buttons on handhelds), or 0 for a button SDL
+     * handles itself.
+     */
+    private static int extraButtonNumber(KeyEvent ev) {
+        int code = ev.getKeyCode();
+        if (code >= KeyEvent.KEYCODE_BUTTON_1 && code <= KeyEvent.KEYCODE_BUTTON_16) {
+            return 1 + code - KeyEvent.KEYCODE_BUTTON_1;   // Joy1..Joy16
+        }
+        switch (code) {
+            case KeyEvent.KEYCODE_BUTTON_C: return 17;
+            case KeyEvent.KEYCODE_BUTTON_Z: return 18;
+            case KeyEvent.KEYCODE_BUTTON_L2:
+            case KeyEvent.KEYCODE_BUTTON_R2: {
+                // Analog triggers already work through their axes; only digital
+                // L2/R2 (no trigger axis) need passing on.
+                InputDevice dev = ev.getDevice();
+                if (dev != null && (dev.getMotionRange(MotionEvent.AXIS_LTRIGGER) != null
+                        || dev.getMotionRange(MotionEvent.AXIS_BRAKE) != null)) {
+                    return 0;
+                }
+                return code == KeyEvent.KEYCODE_BUTTON_L2 ? 19 : 20;
+            }
+            default: return 0;
+        }
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent ev) {
+        int src = ev.getSource();
+        boolean fromController = (src & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+                || (src & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK;
+        int joy = fromController ? extraButtonNumber(ev) : 0;
+        if (joy != 0 && sendExtraButton(joy, ev)) {
+            return true;
+        }
+        return super.dispatchKeyEvent(ev);
+    }
+
+    /** Hands the button to the engine; false if the engine library isn't loaded. */
+    private static boolean sendExtraButton(int joy, KeyEvent ev) {
+        try {
+            int action = ev.getAction();
+            if (action == KeyEvent.ACTION_DOWN && ev.getRepeatCount() == 0) {
+                nativeExtraButton(joy, ev.getKeyCode(), true);
+            } else if (action == KeyEvent.ACTION_UP) {
+                nativeExtraButton(joy, ev.getKeyCode(), false);
+            }
+            return true;
+        } catch (UnsatisfiedLinkError e) {
+            return false;
+        }
     }
 
     /** Called from native code (i_main.cpp) when the engine asks to restart itself. */

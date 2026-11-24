@@ -146,6 +146,12 @@ back, the main menu is open. Press B to carry on.
 
 On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B set or clear marks.
 
+**Extra buttons.** Handhelds with additional buttons (such as the extra shoulder or back buttons on Retroid
+devices) can bind them too: in *Options → Customize Controls*, pick an action and press the button. They show up
+as *Joy1* to *Joy20*; the first press of each one also prints its name in the console. If a button does nothing
+at all, it's probably assigned to a system function: check your device's own button-mapping settings and set it
+to a gamepad button (for example "Button 1" or "C").
+
 Jumping and freelook are **off by default**, like the original games. To use them, set *Options → Gameplay Options →
 Allow jump / Allow freelook* to On or Default. This resets each time the game starts.
 
