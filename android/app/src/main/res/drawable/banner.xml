@@ -2,6 +2,6 @@
 <!-- Android TV launcher banner (320x180). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="320dp" android:height="180dp">
-    <item><shape><solid android:color="@color/bg" /></shape></item>
-    <item android:drawable="@drawable/ic_gamepad" android:width="170dp" android:height="170dp" android:gravity="center" />
+    <item><shape><solid android:color="@color/icon_bg" /></shape></item>
+    <item android:drawable="@drawable/ic_dpad" android:width="240dp" android:height="240dp" android:gravity="center" />
 </layer-list>
