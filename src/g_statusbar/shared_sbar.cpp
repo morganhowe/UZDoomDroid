@@ -68,6 +68,10 @@ EXTERN_CVAR (Bool, am_showsecrets)
 EXTERN_CVAR (Bool, am_showitems)
 EXTERN_CVAR (Bool, am_showtime)
 EXTERN_CVAR (Bool, am_showtotaltime)
+#ifdef __ANDROID__
+EXTERN_CVAR (Bool, am_showbattery)
+int I_GetBatteryLevel(bool *charging);
+#endif
 EXTERN_CVAR (Bool, am_showlevelname)
 EXTERN_CVAR(Bool, inter_subtitles)
 EXTERN_CVAR(Bool, ui_screenborder_classic_scaling)
@@ -559,7 +563,24 @@ void DBaseStatusBar::DoDrawAutomapHUD(int crdefault, int highlight)
 		textbuffer.Format("%02d:%02d:%02d", sec / 3600, (sec % 3600) / 60, sec % 60);
 		DrawText(twod, font, crdefault, vwidth - zerowidth * 8 - textdist, y, textbuffer.GetChars(), DTA_VirtualWidth, vwidth, DTA_VirtualHeight, vheight,
 			DTA_Monospace, EMonospacing::CellCenter, DTA_Spacing, zerowidth, DTA_KeepRatio, true, TAG_END);
+		y += fheight;
 	}
+
+#ifdef __ANDROID__
+	// Android port: device battery level, top right, under the timers.
+	if (am_showbattery)
+	{
+		bool charging = false;
+		const int battery = I_GetBatteryLevel(&charging);
+		if (battery >= 0)
+		{
+			textbuffer.Format("%s %d%%", charging ? "CHARGING" : "BATTERY", battery);
+			auto batfont = font->CanPrint(textbuffer) ? font : OriginalSmallFont;
+			DrawText(twod, batfont, crdefault, vwidth - batfont->StringWidth(textbuffer) - textdist, y, textbuffer.GetChars(),
+				DTA_VirtualWidth, vwidth, DTA_VirtualHeight, vheight, DTA_KeepRatio, true, TAG_END);
+		}
+	}
+#endif
 
 	if (!deathmatch)
 	{

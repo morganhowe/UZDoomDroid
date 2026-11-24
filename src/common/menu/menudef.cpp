@@ -245,6 +245,12 @@ static bool CheckSkipOptionBlock(FScanner &sc)
 				filter = true;
 			#endif
 		}
+		else if (sc.Compare("Android"))
+		{
+			#ifdef __ANDROID__
+				filter = true;
+			#endif
+		}
 		else if (sc.Compare("Mac"))
 		{
 			#ifdef __APPLE__

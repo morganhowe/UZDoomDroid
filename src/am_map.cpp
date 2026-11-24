@@ -154,6 +154,9 @@ CVAR(Bool, am_showmonsters, true, CVAR_ARCHIVE);
 CVAR(Bool, am_showitems, false, CVAR_ARCHIVE);
 CVAR(Bool, am_showtime, true, CVAR_ARCHIVE);
 CVAR(Bool, am_showtotaltime, false, CVAR_ARCHIVE);
+#ifdef __ANDROID__
+CVAR(Bool, am_showbattery, true, CVAR_ARCHIVE);
+#endif
 CVAR(Bool, am_showlevelname, true, CVAR_ARCHIVE);
 CVAR(Int, am_colorset, -1, CVAR_ARCHIVE);
 CVAR(Bool, am_customcolors, true, CVAR_ARCHIVE);

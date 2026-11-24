@@ -1934,6 +1934,10 @@ OptionMenu AutomapOptions protected
 	Option "$AUTOMAPMNU_SHOWSECRETS",    "am_showsecrets", "OnOff"
 	Option "$AUTOMAPMNU_SHOWTIME",       "am_showtime", "OnOff"
 	Option "$AUTOMAPMNU_SHOWTOTALTIME",  "am_showtotaltime", "OnOff"
+	IfOption(Android)
+	{
+		Option "Show battery level",     "am_showbattery", "OnOff"
+	}
 	Option "$AUTOMAPMNU_SHOWMAPLABEL",   "am_showmaplabel", "MaplabelTypes"
 	Option "$AUTOMAPMNU_SHOWLEVELNAME",  "am_showlevelname", "OnOff"
 	Option "$AUTOMAPMNU_MATCHSTATUSBAR", "am_match_statusbar", "OnOff"

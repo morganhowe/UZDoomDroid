@@ -759,30 +759,42 @@ bool M_Responder (event_t *ev)
 			ch = ev->data1;
 			switch (ch)
 			{
+#ifndef __ANDROID__
+			// On Android, JoyN keys are the extra buttons of handhelds (see
+			// i_input.cpp), free for binding, so they don't drive the menus.
 			case KEY_JOY1:
 			case KEY_JOY3:
 			case KEY_JOY15:
+#endif
 			case KEY_PAD_A:
 				mkey = MKEY_Enter;
 				break;
 
+#ifndef __ANDROID__
 			case KEY_JOY2:
 			case KEY_JOY14:
+#endif
 			case KEY_PAD_B:
 				mkey = MKEY_Back;
 				break;
 
+#ifndef __ANDROID__
 			case KEY_JOY4:
+#endif
 			case KEY_PAD_X:
 				mkey = MKEY_Clear;
 				break;
 
+#ifndef __ANDROID__
 			case KEY_JOY5:
+#endif
 			case KEY_PAD_LSHOULDER:
 				mkey = MKEY_PageUp;
 				break;
 
+#ifndef __ANDROID__
 			case KEY_JOY6:
+#endif
 			case KEY_PAD_RSHOULDER:
 				mkey = MKEY_PageDown;
 				break;

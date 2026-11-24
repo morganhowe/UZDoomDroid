@@ -460,3 +460,33 @@ void I_OpenShellFolder(const char* infolder)
 	}
 	free(curdir);
 }
+
+#ifdef __ANDROID__
+//==========================================================================
+//
+// I_GetBatteryLevel
+//
+// Battery charge in percent, or -1 if unknown. Checked at most every 30
+// seconds, because SDL asks Android through JNI each time.
+//
+//==========================================================================
+
+int I_GetBatteryLevel(bool *charging)
+{
+	static Uint32 lastCheck = 0;
+	static int percent = -1;
+	static bool isCharging = false;
+
+	const Uint32 now = SDL_GetTicks();
+	if (lastCheck == 0 || now - lastCheck >= 30000)
+	{
+		lastCheck = now ? now : 1;
+		int pct = -1;
+		const SDL_PowerState state = SDL_GetPowerInfo(nullptr, &pct);
+		percent = (state == SDL_POWERSTATE_UNKNOWN || state == SDL_POWERSTATE_NO_BATTERY) ? -1 : pct;
+		isCharging = state == SDL_POWERSTATE_CHARGING || state == SDL_POWERSTATE_CHARGED;
+	}
+	if (charging) *charging = isCharging;
+	return percent;
+}
+#endif

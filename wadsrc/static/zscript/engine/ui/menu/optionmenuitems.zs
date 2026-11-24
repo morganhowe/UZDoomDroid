@@ -562,7 +562,8 @@ class EnterKey : Menu
 			menuactive = Menu.On;
 			SetMenuMessage(0);
 			Close();
-			mParentMenu.MenuEvent((ev.KeyScan == InputEvent.KEY_ESCAPE) || (ev.KeyScan == InputEvent.KEY_JOY2) ? Menu.MKEY_Abort : Menu.MKEY_Input, 0);
+			// Android port: START cancels instead of Joy2, which is a bindable extra button there.
+			mParentMenu.MenuEvent((ev.KeyScan == InputEvent.KEY_ESCAPE) || (ev.KeyScan == InputEvent.Key_Pad_Start) ? Menu.MKEY_Abort : Menu.MKEY_Input, 0);
 			return true;
 		}
 		return false;

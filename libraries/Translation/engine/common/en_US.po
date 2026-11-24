@@ -149,10 +149,10 @@ msgid "OPTMNU_REVERB"
 msgstr "Reverb environment editor"
 
 msgid "CNTRLMNU_SWITCHTEXT1"
-msgstr "ENTER to change, BACKSPACE to clear"
+msgstr "A (ENTER) to change, X (BACKSPACE) to clear"
 
 msgid "CNTRLMNU_SWITCHTEXT2"
-msgstr "Press new key for control, ESC to cancel"
+msgstr "Press new key or button, START (ESC) to cancel"
 
 msgid "CNTRLMNU_CONTROLS"
 msgstr "Controls"
