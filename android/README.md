@@ -158,6 +158,12 @@ to a gamepad button (for example "Button 1" or "C").
 Jumping and freelook are **off by default**, like the original games. To use them, set *Options → Gameplay Options →
 Allow jump / Allow freelook* to On or Default. This resets each time the game starts.
 
+**Dual screens.** On handhelds with a second screen (such as the AYN Thor), the game plays on the main screen
+and the second screen shows a live map that follows you. *Options → Automap Options* has *Map on second screen*
+to turn it off, and *Second screen map zoom*. The second-screen map draws the map lines, you and keys; it leaves
+out extras such as mark numbers, thing sprites and textured floors. The normal automap still works on the main
+screen.
+
 The automap shows your device's battery level in the top right corner. To hide it, turn off *Options →
 Automap Options → Show battery level*.
 

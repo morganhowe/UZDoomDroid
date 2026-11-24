@@ -156,6 +156,13 @@ CVAR(Bool, am_showtime, true, CVAR_ARCHIVE);
 CVAR(Bool, am_showtotaltime, false, CVAR_ARCHIVE);
 #ifdef __ANDROID__
 CVAR(Bool, am_showbattery, true, CVAR_ARCHIVE);
+// Map on a second display (dual-screen handhelds), see android_secondscreen.cpp.
+CVAR(Bool, am_secondscreen, true, CVAR_ARCHIVE);
+CUSTOM_CVAR(Float, am_secondscreen_zoom, 2.f, CVAR_ARCHIVE)
+{
+	if (self < 0.25f) self = 0.25f;
+	else if (self > 16.f) self = 16.f;
+}
 #endif
 CVAR(Bool, am_showlevelname, true, CVAR_ARCHIVE);
 CVAR(Int, am_colorset, -1, CVAR_ARCHIVE);
@@ -1024,6 +1031,13 @@ class DAutomap :public DAutomapBase
 
 	int line_thickness_scaled; // line thickness scaled to resolution
 
+	uint64_t LastMS = 0; // for frame-rate independent zooming and panning
+
+	// Android: this instance draws the map on a second display. It always follows
+	// the player, uses its own zoom and doesn't depend on the status bar.
+	bool secondary = false;
+	bool secondaryStarted = false;
+
 	// translates between frame-buffer and map distances
 	double FTOM(double x)
 	{
@@ -1098,6 +1112,7 @@ public:
 	DVector2 GetPosition() override;
 	void startDisplay() override;
 
+	void DrawSecondary(int w, int h);
 };
 
 IMPLEMENT_CLASS(DAutomap, false, false)
@@ -1244,7 +1259,7 @@ void DAutomap::calcMinMaxMtoF()
 {
 	const double safe_frame = 1.0 - am_emptyspacemargin / 100.0;
 	double a = safe_frame * (twod->GetWidth() / max_w);
-	double b = safe_frame * (StatusBar->GetTopOfStatusbar() / max_h);
+	double b = safe_frame * ((secondary ? twod->GetHeight() : StatusBar->GetTopOfStatusbar()) / max_h);
 
 	min_scale_mtof = a < b ? a : b;
 	max_scale_mtof = twod->GetHeight() / (2*AutoMap::Defaults::PLAYERRADIUS);
@@ -1456,6 +1471,12 @@ void DAutomap::maxOutWindowScale ()
 
 void DAutomap::NewUIScale()
 {
+	if (secondary)
+	{
+		// About 3 pixels at 1080 lines, like the main map at a typical HUD scale.
+		line_thickness_scaled = max(1, RoundHalfEven(twod->GetHeight() / 360.0));
+		return;
+	}
 	if (StatusBar == nullptr)
 	{
 		line_thickness_scaled = 1;
@@ -3389,7 +3410,6 @@ void DAutomap::drawCrosshair (const AMColor &color)
 
 void DAutomap::Drawer (int bottom)
 {
-	static uint64_t LastMS = 0;
 	// Use a delta to zoom/pan at a constant speed regardless of current FPS
 	uint64_t ms = screen->FrameTime;
 	double delta = (ms - LastMS) * 0.001;
@@ -3397,7 +3417,7 @@ void DAutomap::Drawer (int bottom)
 	if (!automapactive)
 		return;
 
-	if (am_followplayer)
+	if (am_followplayer || secondary)
 	{
 		doFollowPlayer();
 	}
@@ -3415,7 +3435,7 @@ void DAutomap::Drawer (int bottom)
 	}
 
 	// Change the zoom if necessary
-	if (buttonMap.ButtonDown(Button_AM_ZoomIn) || buttonMap.ButtonDown(Button_AM_ZoomOut) || am_zoomdir != 0)
+	if (!secondary && (buttonMap.ButtonDown(Button_AM_ZoomIn) || buttonMap.ButtonDown(Button_AM_ZoomOut) || am_zoomdir != 0))
 		changeWindowScale(delta);
 
 	// Change x,y location
@@ -3579,6 +3599,76 @@ void DAutomap::ResetFollowLocation()
 //
 //
 //=============================================================================
+
+#ifdef __ANDROID__
+EXTERN_CVAR(Float, am_secondscreen_zoom)
+
+void DAutomap::DrawSecondary(int w, int h)
+{
+	secondary = true;
+	if (!secondaryStarted)
+	{
+		LevelInit();
+		f_w = w;
+		f_h = h;
+		startDisplay();
+		secondaryStarted = true;
+	}
+	calcMinMaxMtoF();
+	scale_mtof = clamp(min_scale_mtof / 0.7 * am_secondscreen_zoom, min_scale_mtof, max(min_scale_mtof, max_scale_mtof));
+	scale_ftom = 1.0 / scale_mtof;
+	NewUIScale();
+	Drawer(h);
+}
+
+//=============================================================================
+//
+// Draws the map for a second display into 'drawer' (w x h pixels), without
+// touching the main automap's state. Returns false if there is no map to show.
+//
+//=============================================================================
+
+bool AM_DrawSecondary(F2DDrawer *drawer, int w, int h)
+{
+	if (gamestate != GS_LEVEL || primaryLevel == nullptr || primaryLevel->automap == nullptr)
+		return false;
+	if (dmflags2 & DF2_NO_AUTOMAP)
+		return false;
+	if (players[consoleplayer].camera == nullptr)
+		return false;
+
+	if (primaryLevel->automap2 == nullptr)
+		primaryLevel->automap2 = AM_Create(primaryLevel);
+	auto am = static_cast<DAutomap *>(primaryLevel->automap2.Get());
+	if (am == nullptr)
+		return false;
+
+	// The automap code draws through the global 2D drawer and checks the global
+	// automap/view flags, so point those at the second screen while it draws.
+	F2DDrawer *savedDrawer = twod;
+	const bool savedAutomap = automapactive, savedView = viewactive;
+	twod = drawer;
+	automapactive = true;
+	viewactive = false;
+	try
+	{
+		am->DrawSecondary(w, h);
+	}
+	catch (...)
+	{
+		twod = savedDrawer;
+		automapactive = savedAutomap;
+		viewactive = savedView;
+		AM_initColors(viewactive);
+		throw;
+	}
+	twod = savedDrawer;
+	automapactive = savedAutomap;
+	viewactive = savedView;
+	AM_initColors(viewactive); // the main map's colors depend on overlay mode
+	return true;
+}
+#endif
 
 void AM_Stop()
 {

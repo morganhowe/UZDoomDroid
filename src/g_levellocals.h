@@ -594,6 +594,7 @@ public:
 	static const int BODYQUESIZE = 32;
 	TObjPtr<AActor*> bodyque[BODYQUESIZE];
 	TObjPtr<DAutomapBase*> automap = MakeObjPtr<DAutomapBase*>(nullptr);
+	TObjPtr<DAutomapBase*> automap2 = MakeObjPtr<DAutomapBase*>(nullptr);	// Android second-screen map (not saved)
 	int bodyqueslot;
 
 	// For now this merely points to the global player array, but with this in place, access to this array can be moved over to the level.

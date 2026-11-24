@@ -1,14 +1,22 @@
 package io.github.morganhowe.uzdoomdroid;
 
+import android.app.Presentation;
+import android.content.Context;
 import android.content.Intent;
+import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Process;
+import android.util.Log;
+import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
@@ -30,6 +38,114 @@ public class GameActivity extends SDLActivity {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Runnable hideBars = this::hideSystemBars;
 
+    // ---- Second screen (dual-screen handhelds): shows the automap ----
+
+    private static native void nativeSetSecondScreen(Surface surface);
+
+    private DisplayManager displayManager;
+    private MapPresentation mapPresentation;
+    private boolean resumed;
+
+    private final DisplayManager.DisplayListener displayListener = new DisplayManager.DisplayListener() {
+        @Override public void onDisplayAdded(int displayId) { updateSecondScreen(); }
+        @Override public void onDisplayRemoved(int displayId) { updateSecondScreen(); }
+        @Override public void onDisplayChanged(int displayId) { updateSecondScreen(); }
+    };
+
+    /** A non-focusable window on the second display, holding the surface the engine draws the map into. */
+    private static final class MapPresentation extends Presentation {
+        MapPresentation(Context context, Display display) {
+            super(context, display);
+        }
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            Window w = getWindow();
+            // Never take input focus or touches away from the game on the main screen.
+            w.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                    | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            SurfaceView view = new SurfaceView(getContext());
+            view.getHolder().addCallback(new SurfaceHolder.Callback() {
+                @Override public void surfaceCreated(SurfaceHolder holder) { }
+
+                @Override
+                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                    setSecondScreen(holder.getSurface());
+                }
+
+                @Override
+                public void surfaceDestroyed(SurfaceHolder holder) {
+                    setSecondScreen(null);
+                }
+            });
+            setContentView(view);
+            hideBars(w);
+        }
+
+        @SuppressWarnings("deprecation")
+        private static void hideBars(Window w) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                w.setDecorFitsSystemWindows(false);
+                WindowInsetsController c = w.getInsetsController();
+                if (c != null) {
+                    c.hide(WindowInsets.Type.systemBars());
+                    c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            } else {
+                w.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+            }
+        }
+    }
+
+    private static void setSecondScreen(Surface surface) {
+        try {
+            nativeSetSecondScreen(surface);
+        } catch (UnsatisfiedLinkError e) {
+            // The engine library failed to load; SDL shows its own error for that.
+        }
+    }
+
+    /** The display to show the map on: any display other than the one the game is on. */
+    private Display findSecondDisplay() {
+        if (displayManager == null) return null;
+        int own = getWindowManager().getDefaultDisplay().getDisplayId();
+        Display fallback = null;
+        for (Display d : displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)) {
+            if (d.getDisplayId() != own) return d;
+        }
+        for (Display d : displayManager.getDisplays()) {
+            if (d.getDisplayId() != own && d.getState() != Display.STATE_OFF) {
+                fallback = d;
+                break;
+            }
+        }
+        return fallback;
+    }
+
+    private void updateSecondScreen() {
+        Display target = resumed ? findSecondDisplay() : null;
+        if (mapPresentation != null
+                && (target == null || mapPresentation.getDisplay().getDisplayId() != target.getDisplayId())) {
+            mapPresentation.dismiss();
+            mapPresentation = null;
+        }
+        if (target != null && mapPresentation == null) {
+            MapPresentation p = new MapPresentation(this, target);
+            try {
+                p.show();
+                mapPresentation = p;
+                Log.i("UZDoom", "Showing the map on display " + target.getDisplayId() + " (" + target.getName() + ")");
+            } catch (WindowManager.InvalidDisplayException | IllegalArgumentException e) {
+                Log.w("UZDoom", "Can't use display " + target.getDisplayId() + " for the map", e);
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,12 +164,26 @@ public class GameActivity extends SDLActivity {
         w.setStatusBarColor(0xFF000000);
         w.setNavigationBarColor(0xFF000000);
         hideSystemBars();
+
+        displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
+        if (displayManager != null) {
+            displayManager.registerDisplayListener(displayListener, ui);
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         scheduleHideBars();
+        resumed = true;
+        updateSecondScreen();
+    }
+
+    @Override
+    protected void onPause() {
+        resumed = false;
+        updateSecondScreen(); // takes the map off the second screen while we're away
+        super.onPause();
     }
 
     @Override
@@ -186,6 +316,11 @@ public class GameActivity extends SDLActivity {
     protected void onDestroy() {
         boolean restart = sRestartRequested;
         String[] args = getArguments();
+        if (displayManager != null) {
+            displayManager.unregisterDisplayListener(displayListener);
+        }
+        resumed = false;
+        updateSecondScreen();
         super.onDestroy();
 
         if (isFinishing()) {

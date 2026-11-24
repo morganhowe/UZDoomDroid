@@ -376,6 +376,8 @@ void FLevelLocals::ClearLevelData(bool fullgc)
 	memset(playerstarts, 0, sizeof(playerstarts));
 	Scrolls.Clear();
 	if (automap) automap->Destroy();
+	if (automap2) automap2->Destroy();
+	automap2 = nullptr;
 	Behaviors.UnloadModules();
 	localEventManager->Shutdown();
 	if (aabbTree) delete aabbTree;

@@ -2411,6 +2411,7 @@ void FLevelLocals::Mark()
 	GC::Mark(ACSThinker);
 	GC::Mark(ClientSideACSThinker);
 	GC::Mark(automap);
+	GC::Mark(automap2);
 	GC::Mark(interpolator.Head);
 	GC::Mark(SequenceListHead);
 	GC::Mark(BotInfo.firstthing);

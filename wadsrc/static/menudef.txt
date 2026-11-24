@@ -1937,6 +1937,8 @@ OptionMenu AutomapOptions protected
 	IfOption(Android)
 	{
 		Option "Show battery level",     "am_showbattery", "OnOff"
+		Option "Map on second screen",   "am_secondscreen", "OnOff"
+		Slider "Second screen map zoom", "am_secondscreen_zoom", 0.5, 8, 0.25, 2
 	}
 	Option "$AUTOMAPMNU_SHOWMAPLABEL",   "am_showmaplabel", "MaplabelTypes"
 	Option "$AUTOMAPMNU_SHOWLEVELNAME",  "am_showlevelname", "OnOff"

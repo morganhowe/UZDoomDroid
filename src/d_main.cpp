@@ -1267,6 +1267,10 @@ STAT_OFF(rendergraph_center)
 //
 //==========================================================================
 
+#ifdef __ANDROID__
+void AndroidSecondScreen_Frame();
+#endif
+
 void D_Display ()
 {
 	FTexture *wipestart = nullptr;
@@ -1284,6 +1288,10 @@ void D_Display ()
 	{
 		return;
 	}
+
+#ifdef __ANDROID__
+	AndroidSecondScreen_Frame(); // map on a second display, if there is one
+#endif
 
 	cycle_t cycles;
 
