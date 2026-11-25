@@ -58,6 +58,7 @@ void I_AndroidRequestVulkanSurfaceReset();
 
 #include <jni.h>
 #include "printf.h"
+#include "c_console.h"
 
 // Extra controller buttons (the additional shoulder/back buttons on handhelds such
 // as Retroid devices, and the generic BUTTON_1..16 keys). SDL's Android backend
@@ -689,16 +690,25 @@ void MessagePump (const SDL_Event &sev)
 		if (joykey_stop_conflict > 0 && sev.type == SDL_TEXTINPUT) break;
 		if (GUICapture)
 		{
-			int size;
-
-			int unichar = utf8_decode((const uint8_t*)sev.text.text, &size);
-			if (size != 4)
+			// On-screen keyboards can send a whole word at once, so post every character.
+			const uint8_t *text = (const uint8_t*)sev.text.text;
+			while (*text)
 			{
+				int size;
+				int unichar = utf8_decode(text, &size);
+				if (size <= 0)
+					break;
+				if (unichar < 0 || size == 4)
+				{
+					text += size; // invalid, or outside what the engine's text handling supports
+					continue;
+				}
 				event.type = EV_GUI_Event;
 				event.subtype = EV_GUI_Char;
 				event.data1 = (int16_t)unichar;
 				event.data2 = !!(SDL_GetModState() & KMOD_ALT);
 				D_PostEvent (&event);
+				text += size;
 			}
 		}
 		break;
@@ -786,9 +796,30 @@ void MessagePump (const SDL_Event &sev)
 	}
 }
 
+#ifdef __ANDROID__
+// Shows Android's on-screen keyboard while the console is open, so commands
+// can be typed without a physical keyboard.
+static void Android_UpdateConsoleKeyboard()
+{
+	static bool shown = false;
+	const bool want = ConsoleState == c_down || ConsoleState == c_falling;
+	if (want == shown)
+		return;
+	shown = want;
+	if (want)
+		SDL_StartTextInput();
+	else
+		SDL_StopTextInput();
+}
+#endif
+
 void I_GetEvent ()
 {
 	SDL_Event sev;
+
+#ifdef __ANDROID__
+	Android_UpdateConsoleKeyboard();
+#endif
 
 	while (SDL_PollEvent (&sev))
 	{

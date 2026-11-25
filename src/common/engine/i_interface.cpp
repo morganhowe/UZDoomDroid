@@ -53,7 +53,12 @@ bool			pauseext;
 
 FStartupInfo GameStartupInfo;
 
+#ifdef __ANDROID__
+// Android port: in the Display Options menu, so remember it.
+CVAR(Bool, vid_fps, false, CVAR_ARCHIVE)
+#else
 CVAR(Bool, vid_fps, false, 0)
+#endif
 CVAR(Bool, queryiwad, QUERYIWADDEFAULT, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
 CVAR(Bool, saveargs, true, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
 CVAR(Bool, savenetfile, false, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)

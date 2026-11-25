@@ -149,6 +149,11 @@ On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B s
 **Changing controls.** In *Options → Customize Controls*, press A on an action and then the button to bind
 (START cancels), or press X to clear its bindings.
 
+**Console.** No button opens it by default: bind *Open Console* under *Customize Controls → Other* (left stick
+click is free). Android's on-screen keyboard appears while it's open, for typing commands.
+
+**FPS counter.** *Options → Display Options → Show FPS*.
+
 **Extra buttons.** Handhelds with additional buttons (such as the extra shoulder or back buttons on Retroid
 devices) can bind them too, the same way. They show up
 as *Joy1* to *Joy20*; the first press of each one also prints its name in the console. If a button does nothing
