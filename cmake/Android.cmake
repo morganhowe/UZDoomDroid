@@ -30,8 +30,15 @@ endif()
 set( CMAKE_POSITION_INDEPENDENT_CODE ON )
 
 # Sensible defaults for the platform (still overridable from the command line).
-# Link-time optimization (ThinLTO with the NDK clang): a few percent faster on CPU-bound phones.
-set( FORCE_NO_LTO OFF CACHE BOOL "Turn off LTO even if it would be possible to use it." FORCE )
+# Link-time optimization (ThinLTO with the NDK clang): a few percent faster on
+# CPU-bound phones. CMake's own LTO check (check_ipo_supported) doesn't work with
+# the NDK toolchain (it tries the host's gold linker), so skip it and add the
+# flags directly. The NDK links with lld, which handles ThinLTO.
+set( FORCE_NO_LTO ON CACHE BOOL "Turn off CMake's LTO check; LTO flags are set by cmake/Android.cmake" FORCE )
+# (Directory options rather than CMAKE_*_FLAGS_RELEASE, which the top-level
+# CMakeLists.txt overwrites after including this file.)
+add_compile_options( "$<$<CONFIG:Release>:-flto=thin>" )
+add_link_options( "$<$<CONFIG:Release>:-flto=thin>" )
 set( HAVE_VULKAN ON CACHE BOOL "Vulkan backend (falls back to OpenGL ES when unsupported)" )
 set( VULKAN_USE_XLIB OFF CACHE BOOL "" FORCE )
 set( HAVE_GLES2 ON CACHE BOOL "OpenGL ES backend" )
