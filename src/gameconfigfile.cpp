@@ -790,6 +790,12 @@ void FGameConfigFile::DoGlobalSetup ()
 		FBaseCVar *zoom = FindCVar("am_secondscreen_zoom", NULL);
 		if (zoom != NULL) zoom->ResetToDefault();
 	}
+	if (AndroidSettingsVer < 3)
+	{
+		// Texture precaching became the default.
+		FBaseCVar *precache = FindCVar("gl_precache", NULL);
+		if (precache != NULL) precache->ResetToDefault();
+	}
 #endif
 
 	OkayToWrite = true;
@@ -1068,7 +1074,7 @@ void FGameConfigFile::ArchiveGlobalData ()
 	SetValueForKey ("Version", ENGINELASTRUNVERSION);
 	SetValueForKey ("Release", VERSIONSTR);
 #ifdef __ANDROID__
-	SetValueForKey ("AndroidSettings", "2");
+	SetValueForKey ("AndroidSettings", "3");
 #endif
 
 	SetSection ("GlobalSettings", true);

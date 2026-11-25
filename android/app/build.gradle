@@ -76,6 +76,14 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            // The Gradle plugin builds release native code as RelWithDebInfo, which
+            // keeps assertions on. Use the engine's real release configuration
+            // (-O2, NDEBUG, LTO) instead.
+            externalNativeBuild {
+                cmake {
+                    arguments '-DCMAKE_BUILD_TYPE=Release'
+                }
+            }
             signingConfig releaseKeystore ? signingConfigs.release : signingConfigs.debug
         }
     }

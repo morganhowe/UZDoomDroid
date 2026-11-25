@@ -1269,6 +1269,7 @@ STAT_OFF(rendergraph_center)
 
 #ifdef __ANDROID__
 void AndroidSecondScreen_Frame();
+void AndroidPerformance_FrameDone();
 #endif
 
 void D_Display ()
@@ -1642,6 +1643,9 @@ void D_DoomLoop ()
 			D_ProcessEvents();
 			D_Display ();
 			S_UpdateMusic();
+#ifdef __ANDROID__
+			AndroidPerformance_FrameDone(); // tells Android how long the frame took
+#endif
 
 			if (gameloop_abort)
 			{

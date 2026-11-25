@@ -141,7 +141,13 @@ CUSTOM_CVARD(Int, gl_texture_filter, GL_TEXTURE_FILTER_DEFAULT, CVAR_ARCHIVE|CVA
 	screen->SetTextureFilterMode();
 }
 
+#ifdef __ANDROID__
+// Android port: load a level's textures while it loads, not when they first
+// come into view (which shows up as hitches on big maps).
+CVAR(Bool, gl_precache, true, CVAR_ARCHIVE)
+#else
 CVAR(Bool, gl_precache, false, CVAR_ARCHIVE)
+#endif
 
 
 CUSTOM_CVAR(Int, gl_shadowmap_filter, 1, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)

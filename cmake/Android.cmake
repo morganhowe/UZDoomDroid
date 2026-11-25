@@ -30,7 +30,8 @@ endif()
 set( CMAKE_POSITION_INDEPENDENT_CODE ON )
 
 # Sensible defaults for the platform (still overridable from the command line).
-set( FORCE_NO_LTO ON CACHE BOOL "LTO is slow and memory hungry with the NDK" )
+# Link-time optimization (ThinLTO with the NDK clang): a few percent faster on CPU-bound phones.
+set( FORCE_NO_LTO OFF CACHE BOOL "Turn off LTO even if it would be possible to use it." FORCE )
 set( HAVE_VULKAN ON CACHE BOOL "Vulkan backend (falls back to OpenGL ES when unsupported)" )
 set( VULKAN_USE_XLIB OFF CACHE BOOL "" FORCE )
 set( HAVE_GLES2 ON CACHE BOOL "OpenGL ES backend" )
