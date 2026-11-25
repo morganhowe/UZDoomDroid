@@ -46,3 +46,15 @@ else
 fi
 
 fetch mpg123      https://github.com/libsdl-org/mpg123.git  "$MPG123_TAG" ports/cmake/CMakeLists.txt
+
+# Local changes to the fetched sources (android/patches).
+PATCHES="$(cd "$(dirname "$0")" && pwd)/patches"
+apply_patch() { # dir patch
+	if git -C "$1" apply --reverse --check "$2" 2>/dev/null; then
+		echo "$(basename "$2"): already applied"
+	else
+		git -C "$1" apply "$2"
+		echo "$(basename "$2"): applied"
+	fi
+}
+apply_patch "$DEPS/SDL" "$PATCHES/sdl-plain-text-input.patch"

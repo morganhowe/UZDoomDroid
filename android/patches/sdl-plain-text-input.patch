@@ -1,0 +1,16 @@
+diff --git a/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java b/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
+index a83477b..e56a4f5 100644
+--- a/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
++++ b/android-project/app/src/main/java/org/libsdl/app/SDLActivity.java
+@@ -1941,7 +1941,11 @@ class DummyEdit extends View implements View.OnKeyListener {
+     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+         ic = new SDLInputConnection(this, true);
+ 
++        // UZDoomDroid: plain typing for console commands (no autocorrect,
++        // suggestions or auto-capitals).
+         outAttrs.inputType = InputType.TYPE_CLASS_TEXT |
++                             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD |
++                             InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS |
+                              InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI |
+                               EditorInfo.IME_FLAG_NO_FULLSCREEN /* API 11 */;

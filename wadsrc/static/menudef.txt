@@ -967,6 +967,7 @@ OptionMenu "VideoOptions" protected
 	IfOption(Android)
 	{
 		Option "Show FPS",                     vid_fps,                OnOff
+		Option "Show render times",            vid_rendertimes,        OnOff
 	}
 	StaticText " "
 	Slider "$DSPLYMNU_FOV",                    fov,                    75.0, 120.0, 0.1, 1, "", 0, Gray, 1.0, "$VALFORMAT_DEGREES"

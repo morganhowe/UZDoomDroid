@@ -796,6 +796,12 @@ void FGameConfigFile::DoGlobalSetup ()
 		FBaseCVar *precache = FindCVar("gl_precache", NULL);
 		if (precache != NULL) precache->ResetToDefault();
 	}
+	if (AndroidSettingsVer < 4)
+	{
+		// Controller/keyboard conflict detection is off on Android.
+		FBaseCVar *conflict = FindCVar("joykey_stop_conflict", NULL);
+		if (conflict != NULL) conflict->ResetToDefault();
+	}
 #endif
 
 	OkayToWrite = true;
@@ -1074,7 +1080,7 @@ void FGameConfigFile::ArchiveGlobalData ()
 	SetValueForKey ("Version", ENGINELASTRUNVERSION);
 	SetValueForKey ("Release", VERSIONSTR);
 #ifdef __ANDROID__
-	SetValueForKey ("AndroidSettings", "3");
+	SetValueForKey ("AndroidSettings", "4");
 #endif
 
 	SetSection ("GlobalSettings", true);

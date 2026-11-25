@@ -152,7 +152,7 @@ On the automap, LB / RB zoom, the D-pad pans, X toggles follow mode, and A / B s
 **Console.** No button opens it by default: bind *Open Console* under *Customize Controls → Other* (left stick
 click is free). Android's on-screen keyboard appears while it's open, for typing commands.
 
-**FPS counter.** *Options → Display Options → Show FPS*.
+**FPS counter.** *Options → Display Options → Show FPS*; *Show render times* breaks each frame down (in milliseconds) for performance testing.
 
 **Extra buttons.** Handhelds with additional buttons (such as the extra shoulder or back buttons on Retroid
 devices) can bind them too, the same way. They show up

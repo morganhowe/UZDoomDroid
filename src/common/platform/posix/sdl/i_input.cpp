@@ -148,7 +148,15 @@ bool GUICapture;
 static bool NativeMouse = true;
 
 CVAR (Bool, use_mouse, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
-CUSTOM_CVARD (Int, joykey_stop_conflict, -1, CVAR_ARCHIVE|CVAR_GLOBALCONFIG,
+#ifdef __ANDROID__
+// Android port: off. Handhelds have a built-in controller and an on-screen
+// keyboard for the console, which this check (made for PC handhelds in desktop
+// mode) mistakes for a conflict and then ignores the keyboard.
+#define JOYKEY_STOP_CONFLICT_DEFAULT 0
+#else
+#define JOYKEY_STOP_CONFLICT_DEFAULT -1
+#endif
+CUSTOM_CVARD (Int, joykey_stop_conflict, JOYKEY_STOP_CONFLICT_DEFAULT, CVAR_ARCHIVE|CVAR_GLOBALCONFIG,
 	"Detect joypad/keyboard conflicts, dropping events as needed. "
 	"Useful for handheld PCs such as the SteamDeck. "
 	"-1: auto-detect, 0: disabled, 1: detected, 2: forced"

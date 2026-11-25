@@ -111,6 +111,15 @@ static void AppendLightStats(FString &out)
 		iter_dlight, draw_dlight, iter_dlightf, draw_dlightf );
 }
 
+#ifdef __ANDROID__
+// Android port: a menu switch for the render-time statistics, since typing
+// "stat rendertimes" needs a keyboard.
+CUSTOM_CVAR(Bool, vid_rendertimes, false, 0)
+{
+	FStat::EnableStat("rendertimes", self);
+}
+#endif
+
 ADD_STAT_ONOFF(rendertimes)
 {
 	static FString buff;
