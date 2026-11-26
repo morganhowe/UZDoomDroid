@@ -57,6 +57,11 @@ EXTERN_CVAR(Bool, gl_sort_textures);
 
 extern bool vid_hdr_active;
 
+#ifdef __ANDROID__
+void AndroidPerformance_BeginGpuWait();
+void AndroidPerformance_EndGpuWait();
+#endif
+
 namespace OpenGLESRenderer
 {
 	FGLRenderer *GLRenderer;
@@ -224,18 +229,13 @@ const char* OpenGLFrameBuffer::DeviceName() const
 //==========================================================================
 
 
-#ifdef __ANDROID__
-void AndroidPerformance_BeginGpuWait();
-void AndroidPerformance_EndGpuWait();
-#endif
-
 void OpenGLFrameBuffer::Swap()
 {
 
 	Finish.Reset();
 	Finish.Clock();
 #ifdef __ANDROID__
-	AndroidPerformance_BeginGpuWait();
+	::AndroidPerformance_BeginGpuWait();
 #endif
 
 	mVertexData->DropSync();
@@ -247,7 +247,7 @@ void OpenGLFrameBuffer::Swap()
 	mVertexData->WaitSync();
 
 #ifdef __ANDROID__
-	AndroidPerformance_EndGpuWait();
+	::AndroidPerformance_EndGpuWait();
 #endif
 	Finish.Unclock();
 	camtexcount = 0;
