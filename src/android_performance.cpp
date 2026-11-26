@@ -39,6 +39,9 @@ typedef APerformanceHintSession *(*CreateSessionFn)(APerformanceHintManager *, c
 typedef int (*UpdateTargetFn)(APerformanceHintSession *, int64_t);
 typedef int (*ReportActualFn)(APerformanceHintSession *, int64_t);
 
+int64_t GpuWaitNs;		// this frame's time presenting / waiting for the GPU (game thread only)
+int64_t GpuWaitStart;
+
 UpdateTargetFn UpdateTarget;
 ReportActualFn ReportActual;
 APerformanceHintSession *Session;
@@ -85,6 +88,24 @@ bool Init(int64_t target)
 
 //==========================================================================
 //
+// The renderers call these around presenting a frame and waiting for the GPU.
+//
+//==========================================================================
+
+void AndroidPerformance_BeginGpuWait()
+{
+	GpuWaitStart = NowNs();
+}
+
+void AndroidPerformance_EndGpuWait()
+{
+	if (GpuWaitStart != 0)
+		GpuWaitNs += NowNs() - GpuWaitStart;
+	GpuWaitStart = 0;
+}
+
+//==========================================================================
+//
 // Called once per frame by the main loop (D_DoomLoop).
 //
 //==========================================================================
@@ -102,15 +123,23 @@ void AndroidPerformance_FrameDone()
 		if (Init(target))
 			Printf("Android performance hints on (target %.1f ms per frame)\n", target / 1e6);
 		lastFrame = lastTargetCheck = now;
+		GpuWaitNs = 0;
 		return;
 	}
 	if (Session == nullptr) return;
 
 	const int64_t frame = now - lastFrame;
 	lastFrame = now;
+	// Report the CPU's share of the frame: leave out the time spent waiting for
+	// the GPU and the display. Otherwise a GPU-bound frame looks like slow CPU
+	// work, and Android runs the CPU flat out for nothing, taking power and
+	// heat budget away from the GPU.
+	int64_t work = frame - GpuWaitNs;
+	GpuWaitNs = 0;
+	if (work < frame / 10) work = frame / 10;
 	// Skip the first frame after a pause (app in the background, loading).
 	if (frame > 0 && frame < 500000000)
-		ReportActual(Session, frame);
+		ReportActual(Session, work);
 
 	// The refresh rate or frame-rate limit can change while playing.
 	if (now - lastTargetCheck > 2000000000)

@@ -160,12 +160,20 @@ void VkCommandBufferManager::FlushCommands(bool finish, bool lastsubmit, bool up
 	}
 }
 
+#ifdef __ANDROID__
+void AndroidPerformance_BeginGpuWait();
+void AndroidPerformance_EndGpuWait();
+#endif
+
 void VkCommandBufferManager::WaitForCommands(bool finish, bool uploadOnly)
 {
 	if (finish)
 	{
 		Finish.Reset();
 		Finish.Clock();
+#ifdef __ANDROID__
+		AndroidPerformance_BeginGpuWait();
+#endif
 
 		fb->GetFramebufferManager()->AcquireImage();
 	}
@@ -192,6 +200,9 @@ void VkCommandBufferManager::WaitForCommands(bool finish, bool uploadOnly)
 
 	if (finish)
 	{
+#ifdef __ANDROID__
+		AndroidPerformance_EndGpuWait();
+#endif
 		Finish.Unclock();
 		rendered_commandbuffers = current_rendered_commandbuffers;
 		current_rendered_commandbuffers = 0;

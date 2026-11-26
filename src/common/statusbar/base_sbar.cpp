@@ -191,6 +191,26 @@ void ST_DrawCrosshair(int phealth, double xpos, double ypos, double scale, DAngl
 		color = lastColor;
 	}
 
+#ifdef __ANDROID__
+	// Android port: textures are unfiltered by default there. Centring an
+	// odd-sized crosshair puts its edges on half pixels, and nearest-neighbour
+	// sampling then drops a row or column (e.g. one spoke). Snap it to whole
+	// pixels when it isn't rotated.
+	if (angle.Degrees() == 0)
+	{
+		const double ox = CrosshairImage->GetDisplayLeftOffset() * size, oy = CrosshairImage->GetDisplayTopOffset() * size;
+		DrawTexture(twod, CrosshairImage,
+			std::round(xpos - ox), std::round(ypos - oy),
+			DTA_DestWidth, w,
+			DTA_DestHeight, h,
+			DTA_TopLeft, true,
+			DTA_AlphaChannel, true,
+			DTA_RenderStyle, style,
+			DTA_FillColor, color & 0xFFFFFF,
+			TAG_DONE);
+		return;
+	}
+#endif
 	DrawTexture(twod, CrosshairImage,
 		xpos, ypos,
 		DTA_DestWidth, w,

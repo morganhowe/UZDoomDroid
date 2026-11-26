@@ -238,11 +238,34 @@ void DrawTriangle(const Target &t, const Prim &p)
 	const bool tl1 = topLeft(x2, y2, x0, y0);
 	const bool tl2 = topLeft(x0, y0, x1, y1);
 
+	// For each row, work out the span the triangle covers from the three edge
+	// equations first, then test only those pixels. (Testing the whole bounding
+	// box made long diagonal map lines, drawn as thin quads, very expensive.)
+	struct Edge { float ax, ay, bx, by; };
+	const Edge edges[3] = { { x1, y1, x2, y2 }, { x2, y2, x0, y0 }, { x0, y0, x1, y1 } };
+
 	for (int y = miny; y <= maxy; y++)
 	{
 		const float py = y + 0.5f;
+		float lo = float(minx), hi = float(maxx) + 1.f;
+		bool empty = false;
+		for (const Edge &e : edges)
+		{
+			// edge(px) = A * px + B
+			const float A = -(e.by - e.ay);
+			const float B = (e.bx - e.ax) * (py - e.ay) + (e.by - e.ay) * e.ax;
+			if (A > 0.f) lo = std::max(lo, -B / A);
+			else if (A < 0.f) hi = std::min(hi, -B / A);
+			else if (B < 0.f) { empty = true; break; }
+		}
+		if (empty || lo > hi) continue;
+		// Pixel centres in [lo, hi], with a pixel of slack for rounding; the
+		// exact test below still decides.
+		const int x0s = std::max(minx, int(std::floor(lo - 0.5f)) - 1);
+		const int x1s = std::min(maxx, int(std::ceil(hi - 0.5f)) + 1);
+
 		uint32_t *row = t.bits + y * t.stride;
-		for (int x = minx; x <= maxx; x++)
+		for (int x = x0s; x <= x1s; x++)
 		{
 			const float px = x + 0.5f;
 			const float w0 = edge(x1, y1, x2, y2, px, py);
@@ -514,9 +537,10 @@ void AndroidSecondScreen_Frame()
 	if (w <= 0 || h <= 0)
 		return;
 
-	// The second display usually refreshes at 60 Hz; don't do more work than that.
+	// 30 updates a second is plenty for a map, and leaves the CPU (and the
+	// power budget it shares with the GPU) to the game.
 	const uint64_t now = I_msTime();
-	if (now - lastFrame < 15)
+	if (now - lastFrame < 32)
 		return;
 
 	drawer.Clear();

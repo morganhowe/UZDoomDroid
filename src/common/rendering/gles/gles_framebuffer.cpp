@@ -224,11 +224,19 @@ const char* OpenGLFrameBuffer::DeviceName() const
 //==========================================================================
 
 
+#ifdef __ANDROID__
+void AndroidPerformance_BeginGpuWait();
+void AndroidPerformance_EndGpuWait();
+#endif
+
 void OpenGLFrameBuffer::Swap()
 {
 
 	Finish.Reset();
 	Finish.Clock();
+#ifdef __ANDROID__
+	AndroidPerformance_BeginGpuWait();
+#endif
 
 	mVertexData->DropSync();
 
@@ -238,6 +246,9 @@ void OpenGLFrameBuffer::Swap()
 	mVertexData->NextPipelineBuffer();
 	mVertexData->WaitSync();
 
+#ifdef __ANDROID__
+	AndroidPerformance_EndGpuWait();
+#endif
 	Finish.Unclock();
 	camtexcount = 0;
 	FHardwareTexture::UnbindAll();
